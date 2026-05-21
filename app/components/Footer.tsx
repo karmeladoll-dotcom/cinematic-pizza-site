@@ -1,3 +1,5 @@
+"use client";
+
 const SOCIAL_LINKS = [
   { label: "Instagram", href: "#" },
   { label: "Facebook", href: "#" },
