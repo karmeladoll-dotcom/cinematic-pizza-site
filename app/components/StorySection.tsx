@@ -10,6 +10,7 @@ export default function StorySection() {
   const labelRef = useRef<HTMLSpanElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
+  const parallaxGlowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -43,6 +44,24 @@ export default function StorySection() {
         { autoAlpha: 0, y: 30 },
         { autoAlpha: 1, y: 0, duration: 1.2, ease: "power2.out", delay: 0.55, scrollTrigger: trigger }
       );
+
+      // Ambient glow drifts slowly on scroll — creates depth without distraction
+      if (parallaxGlowRef.current) {
+        gsap.fromTo(
+          parallaxGlowRef.current,
+          { y: 38 },
+          {
+            y: -38,
+            ease: "none",
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: "top bottom",
+              end: "bottom top",
+              scrub: 2.5,
+            },
+          }
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();
@@ -79,21 +98,72 @@ export default function StorySection() {
         }}
       />
 
-      {/* Warm ambient center glow */}
+      {/* Warm ambient center glow — parallaxes slowly on scroll for depth */}
       <div
+        ref={parallaxGlowRef}
         aria-hidden="true"
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: "75%",
-          height: "70%",
-          background:
-            "radial-gradient(ellipse at center, rgba(251,191,36,0.07) 0%, rgba(249,115,22,0.04) 35%, transparent 68%)",
+          width: "85%",
+          height: "80%",
           pointerEvents: "none",
+          willChange: "transform",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background:
+              "radial-gradient(ellipse at center, rgba(251,191,36,0.08) 0%, rgba(249,115,22,0.045) 35%, transparent 68%)",
+          }}
+        />
+      </div>
+
+      {/* Drifting ember accents — small sparks that hint at the wood fire */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: "18%",
+          left: "14%",
+          width: 2,
+          height: 2,
+          borderRadius: "50%",
+          background: "rgba(251,191,36,0.38)",
+          boxShadow: "0 0 6px 2px rgba(251,191,36,0.18)",
+          pointerEvents: "none",
+          animation: "storyEmberA 6s ease-in-out infinite",
         }}
       />
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: "72%",
+          right: "16%",
+          width: 2,
+          height: 2,
+          borderRadius: "50%",
+          background: "rgba(249,115,22,0.32)",
+          boxShadow: "0 0 5px 2px rgba(249,115,22,0.14)",
+          pointerEvents: "none",
+          animation: "storyEmberB 8s ease-in-out infinite 1.5s",
+        }}
+      />
+      <style>{`
+        @keyframes storyEmberA {
+          0%, 100% { opacity: 0.18; transform: translateY(0px); }
+          50%       { opacity: 0.55; transform: translateY(-8px); }
+        }
+        @keyframes storyEmberB {
+          0%, 100% { opacity: 0.12; transform: translateY(0px); }
+          50%       { opacity: 0.40; transform: translateY(-6px); }
+        }
+      `}</style>
 
       {/* Thin amber line */}
       <div
