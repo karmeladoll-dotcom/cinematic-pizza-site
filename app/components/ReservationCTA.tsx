@@ -35,6 +35,7 @@ export default function ReservationCTA() {
   return (
     <section
       id="reserve"
+      data-pizza-section="reservation"
       ref={sectionRef}
       style={{
         position: "relative",

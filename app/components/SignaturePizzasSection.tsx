@@ -78,6 +78,7 @@ export default function SignaturePizzasSection() {
   return (
     <section
       ref={sectionRef}
+      data-pizza-section="pizzas"
       style={{
         position: "relative",
         background: "#080808",

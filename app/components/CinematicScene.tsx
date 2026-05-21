@@ -58,27 +58,51 @@ export default function CinematicScene() {
       const img = images[index];
       if (!img?.complete || !img.naturalWidth) return;
 
-      // Subtle progressive zoom as frames advance
+      // Mobile breakpoint — portrait phones and small tablets
+      const isMobile = canvas.width < 768;
+
+      // Progressive cinematic zoom — gentler on mobile so the pizza stays fully visible
       const progress = index / (TOTAL_FRAMES - 1);
-      const scale = 1 + progress * 0.07;
+      const scale = 1 + progress * (isMobile ? 0.025 : 0.07);
 
       const imgAspect = img.naturalWidth / img.naturalHeight;
       const canvasAspect = canvas.width / canvas.height;
 
       let drawW: number, drawH: number;
-      if (imgAspect > canvasAspect) {
-        drawH = canvas.height * scale;
-        drawW = drawH * imgAspect;
+
+      if (isMobile) {
+        // Contain-style on mobile: fit the whole pizza within the viewport.
+        // Landscape images fit by width; portrait/square images fit by height.
+        // A 0.88 padding factor adds breathing room and keeps the look cinematic.
+        const containPad = 0.88;
+        if (imgAspect > canvasAspect) {
+          drawW = canvas.width * containPad * scale;
+          drawH = drawW / imgAspect;
+        } else {
+          drawH = canvas.height * containPad * scale;
+          drawW = drawH * imgAspect;
+        }
       } else {
-        drawW = canvas.width * scale;
-        drawH = drawW / imgAspect;
+        // Desktop: cover-style — image fills the full canvas with a subtle zoom-in
+        if (imgAspect > canvasAspect) {
+          drawH = canvas.height * scale;
+          drawW = drawH * imgAspect;
+        } else {
+          drawW = canvas.width * scale;
+          drawH = drawW / imgAspect;
+        }
       }
 
+      // Centre the image on both axes
       const drawX = (canvas.width - drawW) / 2;
       const drawY = (canvas.height - drawH) / 2;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+      // [PIZZA-SCROLL-HOOK] Future: emit the current frame index and progress
+      // to the global pizza scroll context so downstream sections can react.
+      // pizzaScrollEmit({ frame: index, progress });
     }
 
     // ---------- particles ----------
@@ -213,6 +237,12 @@ export default function CinematicScene() {
         7.8
       );
 
+      // [PIZZA-SCROLL-HOOK] Future: at this position in the timeline the hero
+      // section hands the pizza off to the next storytelling section.
+      // The ScrollTrigger `onLeave` callback below is the intended integration
+      // point — connect it to the global pizza scroll context when ready.
+      // tl.scrollTrigger.vars.onLeave = () => pizzaScrollContext.handOff("story");
+
       // Fade out the loading overlay
       gsap.to(loadingRef.current, {
         autoAlpha: 0,
@@ -318,6 +348,7 @@ export default function CinematicScene() {
       {/* ── Cinematic section ── */}
       <section
         ref={sectionRef}
+        data-pizza-section="hero"
         className="relative w-full bg-black overflow-hidden"
         style={{ height: "100vh" }}
       >

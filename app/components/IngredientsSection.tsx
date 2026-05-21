@@ -75,6 +75,7 @@ export default function IngredientsSection() {
   return (
     <section
       id="menu"
+      data-pizza-section="ingredients"
       ref={sectionRef}
       style={{
         position: "relative",

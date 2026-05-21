@@ -51,6 +51,7 @@ export default function StorySection() {
   return (
     <section
       id="story"
+      data-pizza-section="story"
       ref={sectionRef}
       style={{
         position: "relative",
