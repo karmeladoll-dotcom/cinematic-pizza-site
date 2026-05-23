@@ -4,9 +4,22 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+/**
+ * Chapter IV — The Invitation
+ *
+ * The final section of the film.  The oven has been burning since before
+ * dawn; seventeen covers; one unforgettable meal.
+ *
+ * Enhancements over the original:
+ *  • Three CSS smoke wisps rise from the bottom — pure CSS keyframe
+ *    animations (no RAF overhead) for cinematic haze.
+ *  • Two-layer oven glow: a wide diffuse field + a bright inner core.
+ *  • Chapter indicator and a thin gold border accent.
+ *  • Existing copy and CTA preserved verbatim.
+ */
 export default function ReservationCTA() {
   const sectionRef = useRef<HTMLElement>(null);
-  const itemsRef = useRef<HTMLDivElement>(null);
+  const itemsRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -18,11 +31,8 @@ export default function ReservationCTA() {
           Array.from(items),
           { autoAlpha: 0, y: 45 },
           {
-            autoAlpha: 1,
-            y: 0,
-            duration: 1.4,
-            ease: "power2.out",
-            stagger: 0.18,
+            autoAlpha: 1, y: 0,
+            duration: 1.5, ease: "power2.out", stagger: 0.2,
             scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
           }
         );
@@ -40,38 +50,157 @@ export default function ReservationCTA() {
       style={{
         position: "relative",
         background: "#060606",
-        padding: "clamp(7rem, 14vw, 18rem) clamp(1.5rem, 8vw, 8rem)",
+        padding: "clamp(8rem, 16vw, 20rem) clamp(1.5rem, 8vw, 8rem)",
         overflow: "hidden",
         textAlign: "center",
       }}
     >
-      {/* Ambient radial glow */}
+      {/* ── CSS smoke wisps — no RAF required ── */}
+      <style>{`
+        @keyframes smokeRise1 {
+          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
+          20%  { opacity: 0.85; }
+          80%  { opacity: 0.55; }
+          100% { opacity: 0;    transform: translateY(-90px) scaleX(1.45); }
+        }
+        @keyframes smokeRise2 {
+          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
+          25%  { opacity: 0.70; }
+          75%  { opacity: 0.45; }
+          100% { opacity: 0;    transform: translateY(-75px) scaleX(1.35); }
+        }
+        @keyframes smokeRise3 {
+          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
+          30%  { opacity: 0.60; }
+          70%  { opacity: 0.35; }
+          100% { opacity: 0;    transform: translateY(-60px) scaleX(1.25); }
+        }
+        @keyframes ovenPulse {
+          0%, 100% { opacity: 0.72; }
+          50%      { opacity: 1.00; }
+        }
+      `}</style>
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          bottom: 0, left: "50%",
+          transform: "translateX(-50%)",
+          width: "100%",
+          height: "55%",
+          pointerEvents: "none",
+        }}
+      >
+        {/* Smoke wisp 1 — centre */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "48%",
+            width: "clamp(80px, 14vw, 180px)",
+            height: "clamp(80px, 14vw, 180px)",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(ellipse, rgba(255,225,180,0.10) 0%, transparent 68%)",
+            filter: "blur(18px)",
+            animation: "smokeRise1 7s ease-out infinite",
+          }}
+        />
+        {/* Smoke wisp 2 — left offset */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "38%",
+            width: "clamp(60px, 10vw, 130px)",
+            height: "clamp(60px, 10vw, 130px)",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(ellipse, rgba(255,210,160,0.08) 0%, transparent 68%)",
+            filter: "blur(22px)",
+            animation: "smokeRise2 9s ease-out infinite 2.2s",
+          }}
+        />
+        {/* Smoke wisp 3 — right offset */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: "56%",
+            width: "clamp(50px, 8vw, 110px)",
+            height: "clamp(50px, 8vw, 110px)",
+            borderRadius: "50%",
+            background:
+              "radial-gradient(ellipse, rgba(255,195,140,0.07) 0%, transparent 68%)",
+            filter: "blur(20px)",
+            animation: "smokeRise3 11s ease-out infinite 4.5s",
+          }}
+        />
+      </div>
+
+      {/* ── Wide diffuse oven glow field ── */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(ellipse 70% 55% at 50% 50%, rgba(251,191,36,0.06) 0%, rgba(249,115,22,0.035) 35%, transparent 68%)",
+            "radial-gradient(ellipse 80% 65% at 50% 55%, rgba(249,115,22,0.07) 0%, rgba(251,191,36,0.04) 35%, transparent 68%)",
           pointerEvents: "none",
+          animation: "ovenPulse 4.5s ease-in-out infinite",
         }}
       />
 
-      {/* Top border accent */}
+      {/* ── Bright inner glow core ── */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
-          top: 0,
-          left: "10%",
-          right: "10%",
-          height: "1px",
+          inset: 0,
           background:
-            "linear-gradient(to right, transparent, rgba(251,191,36,0.2), transparent)",
+            "radial-gradient(ellipse 40% 35% at 50% 55%, rgba(251,191,36,0.06) 0%, transparent 62%)",
           pointerEvents: "none",
         }}
       />
 
+      {/* ── Top border accent ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: 0, left: "8%", right: "8%",
+          height: "1px",
+          background:
+            "linear-gradient(to right, transparent, rgba(251,191,36,0.22), transparent)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* ── Chapter indicator ── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: "clamp(1.5rem, 3vw, 2.5rem)",
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-cinematic, serif)",
+            fontSize: "0.48rem",
+            letterSpacing: "0.52em",
+            textTransform: "uppercase",
+            color: "rgba(251,191,36,0.28)",
+          }}
+        >
+          Chapter IV — The Invitation
+        </span>
+      </div>
+
+      {/* ── Content ── */}
       <div ref={itemsRef}>
         {/* Label */}
         <span
@@ -106,12 +235,7 @@ export default function ReservationCTA() {
         >
           Reserve Your
           <br />
-          <em
-            style={{
-              fontStyle: "italic",
-              color: "rgba(251,191,36,0.92)",
-            }}
-          >
+          <em style={{ fontStyle: "italic", color: "rgba(251,191,36,0.92)" }}>
             Experience
           </em>
         </h2>
@@ -122,10 +246,10 @@ export default function ReservationCTA() {
           style={{
             fontFamily: "var(--font-cinematic, serif)",
             fontSize: "clamp(0.82rem, 1.4vw, 1.08rem)",
-            color: "rgba(161,161,170,0.45)",
+            color: "rgba(161,161,170,0.42)",
             maxWidth: 500,
             margin: "0 auto 3.8rem",
-            lineHeight: 1.9,
+            lineHeight: 1.95,
             letterSpacing: "0.02em",
             opacity: 0,
           }}

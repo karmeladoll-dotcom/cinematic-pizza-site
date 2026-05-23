@@ -4,8 +4,25 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+/**
+ * Chapter III — The Creation
+ *
+ * Transforms the standard card grid into a cinematic editorial list.
+ * Each pizza is a full-width row — a film frame, not a product tile.
+ *
+ * Layout:
+ *   Ghost numeral (enormous, near-transparent) fills the background.
+ *   Left: roman numeral · name (very large) · note / badge
+ *   Right: price (amber, prominent)
+ *   Full-width: description text + thin gold separator below each row.
+ *
+ * GSAP: each row slides in independently as its top edge crosses 72%
+ * of the viewport — staggered for rhythm, not simultaneity.
+ */
+
 const PIZZAS = [
   {
+    roman: "I",
     number: "01",
     name: "Margherita D.O.C.",
     badge: "Signature",
@@ -13,8 +30,12 @@ const PIZZAS = [
       "San Marzano tomato, Fior di Latte, aged Parmigiano Reggiano, Genovese basil, Sicilian extra-virgin olive oil. The original. Unrepeatable.",
     price: "€ 22",
     note: "Neapolitan Classic",
+    ghostColor: "rgba(255,255,255,0.018)",
+    accentColor: "rgba(251,191,36,0.75)",
+    glowColor: "rgba(251,191,36,0.06)",
   },
   {
+    roman: "II",
     number: "02",
     name: "Diavola Calabrese",
     badge: "Chef's Pick",
@@ -22,8 +43,12 @@ const PIZZAS = [
       "Crushed San Marzano, Fior di Latte, spicy Calabrian salami, hand-pressed Nduja, chilli-infused oil, fresh wild oregano.",
     price: "€ 26",
     note: "Spicy & Bold",
+    ghostColor: "rgba(255,255,255,0.018)",
+    accentColor: "rgba(249,115,22,0.75)",
+    glowColor: "rgba(249,115,22,0.055)",
   },
   {
+    roman: "III",
     number: "03",
     name: "Tartufo Nero",
     badge: "Premium",
@@ -31,45 +56,56 @@ const PIZZAS = [
       "Truffle cream base, Fior di Latte, shaved Périgord black truffle, wild porcini, aged Pecorino Romano, white truffle finishing oil.",
     price: "€ 38",
     note: "Seasonal Special",
+    ghostColor: "rgba(255,255,255,0.018)",
+    accentColor: "rgba(220,200,160,0.72)",
+    glowColor: "rgba(200,180,130,0.05)",
   },
 ];
 
 export default function SignaturePizzasSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const headingRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
+  const sectionRef  = useRef<HTMLElement>(null);
+  const headingRef  = useRef<HTMLDivElement>(null);
+  const rowsRef     = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
+      /* Section heading */
       gsap.fromTo(
         headingRef.current,
         { autoAlpha: 0, y: 40 },
         {
-          autoAlpha: 1,
-          y: 0,
-          duration: 1.3,
-          ease: "power2.out",
-          scrollTrigger: { trigger: sectionRef.current, start: "top 70%" },
+          autoAlpha: 1, y: 0, duration: 1.4, ease: "power2.out",
+          scrollTrigger: { trigger: sectionRef.current, start: "top 72%" },
         }
       );
 
-      const cards = cardsRef.current?.querySelectorAll<HTMLElement>(".pizza-card");
-      if (cards?.length) {
+      /* Each pizza row reveals individually */
+      const rows = rowsRef.current?.querySelectorAll<HTMLElement>(".pz-row");
+      rows?.forEach((row) => {
         gsap.fromTo(
-          Array.from(cards),
-          { autoAlpha: 0, y: 65 },
+          row,
+          { autoAlpha: 0, y: 50 },
           {
-            autoAlpha: 1,
-            y: 0,
-            duration: 1.3,
-            ease: "power3.out",
-            stagger: 0.17,
-            scrollTrigger: { trigger: cardsRef.current, start: "top 75%" },
+            autoAlpha: 1, y: 0, duration: 1.4, ease: "power3.out",
+            scrollTrigger: { trigger: row, start: "top 82%" },
           }
         );
-      }
+      });
+
+      /* Separator lines draw in after the row */
+      const lines = rowsRef.current?.querySelectorAll<HTMLElement>(".pz-line");
+      lines?.forEach((line) => {
+        gsap.fromTo(
+          line,
+          { scaleX: 0, transformOrigin: "left center" },
+          {
+            scaleX: 1, duration: 1.0, ease: "power2.out",
+            scrollTrigger: { trigger: line, start: "top 88%" },
+          }
+        );
+      });
     }, sectionRef);
 
     return () => ctx.revert();
@@ -77,27 +113,25 @@ export default function SignaturePizzasSection() {
 
   return (
     <section
-      ref={sectionRef}
       data-pizza-section="pizzas"
+      ref={sectionRef}
       style={{
         position: "relative",
         background: "#080808",
-        padding: "clamp(5rem, 10vw, 13rem) clamp(1.5rem, 8vw, 8rem)",
+        padding: "clamp(6rem, 12vw, 14rem) clamp(1.5rem, 8vw, 8rem)",
         overflow: "hidden",
       }}
     >
-      {/* Ambient warm glow from top */}
+      {/* Ambient warm glow from top — oven light overhead */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
-          top: 0,
-          left: "50%",
+          top: 0, left: "50%",
           transform: "translateX(-50%)",
-          width: "90%",
-          height: "50%",
+          width: "88%", height: "45%",
           background:
-            "radial-gradient(ellipse at top center, rgba(249,115,22,0.05) 0%, rgba(251,191,36,0.02) 40%, transparent 65%)",
+            "radial-gradient(ellipse at top center, rgba(249,115,22,0.07) 0%, rgba(251,191,36,0.03) 42%, transparent 68%)",
           pointerEvents: "none",
         }}
       />
@@ -105,173 +139,178 @@ export default function SignaturePizzasSection() {
       {/* Section heading */}
       <div
         ref={headingRef}
-        style={{ textAlign: "center", marginBottom: "clamp(3.5rem, 7vw, 7rem)", opacity: 0 }}
+        style={{
+          marginBottom: "clamp(3.5rem, 7vw, 7rem)",
+          opacity: 0,
+        }}
       >
         <span
           style={{
             display: "block",
             fontFamily: "var(--font-cinematic, serif)",
-            fontSize: "0.58rem",
+            fontSize: "0.48rem",
             letterSpacing: "0.52em",
             textTransform: "uppercase",
-            color: "rgba(249,115,22,0.6)",
+            color: "rgba(251,191,36,0.38)",
             marginBottom: "1.3rem",
           }}
         >
-          The Selection
+          Chapter III — The Creation
         </span>
         <h2
           style={{
             fontFamily: "var(--font-cinematic, serif)",
-            fontSize: "clamp(1.9rem, 4.5vw, 4.5rem)",
+            fontSize: "clamp(1.9rem, 4.5vw, 5rem)",
             fontWeight: 300,
-            letterSpacing: "0.04em",
+            letterSpacing: "0.03em",
             color: "#ffffff",
-            lineHeight: 1.1,
+            lineHeight: 1.08,
           }}
         >
           Signature Pizzas
         </h2>
       </div>
 
-      {/* Pizza cards */}
-      <div
-        ref={cardsRef}
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-          gap: "2rem",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
+      {/* Pizza editorial rows */}
+      <div ref={rowsRef} style={{ maxWidth: 1200, margin: "0 auto" }}>
         {PIZZAS.map((pizza) => (
-          <article
-            key={pizza.name}
-            className="pizza-card"
-            style={{
-              opacity: 0,
-              position: "relative",
-              background:
-                "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)",
-              border: "1px solid rgba(255,255,255,0.07)",
-              padding: "2.8rem 2.2rem 2.2rem",
-              transition: "all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-              cursor: "default",
-              overflow: "hidden",
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              el.style.background =
-                "linear-gradient(145deg, rgba(249,115,22,0.07) 0%, rgba(251,191,36,0.04) 100%)";
-              el.style.borderColor = "rgba(249,115,22,0.28)";
-              el.style.boxShadow =
-                "0 24px 80px rgba(0,0,0,0.55), 0 0 50px rgba(249,115,22,0.07)";
-              el.style.transform = "translateY(-7px)";
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              el.style.background =
-                "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)";
-              el.style.borderColor = "rgba(255,255,255,0.07)";
-              el.style.boxShadow = "none";
-              el.style.transform = "translateY(0)";
-            }}
-          >
-            {/* Number */}
-            <span
+          <div key={pizza.name}>
+            {/* Row wrapper */}
+            <article
+              className="pz-row"
               style={{
-                display: "block",
-                fontFamily: "var(--font-cinematic, serif)",
-                fontSize: "0.55rem",
-                letterSpacing: "0.45em",
-                color: "rgba(249,115,22,0.45)",
-                marginBottom: "1.6rem",
+                position: "relative",
+                opacity: 0,
+                paddingTop: "clamp(2.5rem, 5vw, 5rem)",
+                paddingBottom: "clamp(2.5rem, 5vw, 5rem)",
+                overflow: "hidden",
               }}
             >
-              {pizza.number}
-            </span>
+              {/* Ghost numeral background — layered depth */}
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: "-0.06em",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  fontFamily: "var(--font-cinematic, serif)",
+                  fontSize: "clamp(18vw, 26vw, 34vw)",
+                  fontWeight: 300,
+                  color: pizza.ghostColor,
+                  lineHeight: 1,
+                  letterSpacing: "-0.04em",
+                  pointerEvents: "none",
+                  userSelect: "none",
+                }}
+              >
+                {pizza.roman}
+              </span>
 
-            {/* Badge */}
-            <span
-              style={{
-                position: "absolute",
-                top: "2.2rem",
-                right: "2.2rem",
-                fontFamily: "var(--font-cinematic, serif)",
-                fontSize: "0.48rem",
-                letterSpacing: "0.38em",
-                textTransform: "uppercase",
-                color: "rgba(251,191,36,0.42)",
-                border: "1px solid rgba(251,191,36,0.18)",
-                padding: "0.32rem 0.7rem",
-              }}
-            >
-              {pizza.badge}
-            </span>
+              {/* Subtle radial glow per pizza */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: `radial-gradient(ellipse 60% 80% at 50% 50%, ${pizza.glowColor} 0%, transparent 65%)`,
+                  pointerEvents: "none",
+                }}
+              />
 
-            {/* Title */}
-            <h3
-              style={{
-                fontFamily: "var(--font-cinematic, serif)",
-                fontSize: "clamp(1.3rem, 2.2vw, 1.75rem)",
-                fontWeight: 400,
-                color: "#ffffff",
-                letterSpacing: "0.025em",
-                marginBottom: "1rem",
-                lineHeight: 1.15,
-              }}
-            >
-              {pizza.name}
-            </h3>
+              {/* Content — relative so it sits above ghost */}
+              <div style={{ position: "relative", zIndex: 2 }}>
+                {/* Top row: number + badge + price */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    marginBottom: "clamp(0.6rem, 1.2vw, 1rem)",
+                    flexWrap: "wrap",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-cinematic, serif)",
+                      fontSize: "0.52rem",
+                      letterSpacing: "0.46em",
+                      textTransform: "uppercase",
+                      color: pizza.accentColor,
+                      opacity: 0.72,
+                    }}
+                  >
+                    {pizza.number} — {pizza.badge}
+                  </span>
 
-            {/* Description */}
-            <p
-              style={{
-                fontFamily: "var(--font-cinematic, serif)",
-                fontSize: "clamp(0.78rem, 1.15vw, 0.92rem)",
-                color: "rgba(161,161,170,0.6)",
-                lineHeight: 1.8,
-                marginBottom: "2.2rem",
-              }}
-            >
-              {pizza.description}
-            </p>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-cinematic, serif)",
+                      fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
+                      fontWeight: 400,
+                      color: pizza.accentColor,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {pizza.price}
+                  </span>
+                </div>
 
-            {/* Footer row */}
+                {/* Pizza name — the film title */}
+                <h3
+                  style={{
+                    fontFamily: "var(--font-cinematic, serif)",
+                    fontSize: "clamp(2.2rem, 5.5vw, 6.5rem)",
+                    fontWeight: 300,
+                    color: "#ffffff",
+                    letterSpacing: "0.01em",
+                    lineHeight: 1.02,
+                    marginBottom: "clamp(0.5rem, 1vw, 0.9rem)",
+                  }}
+                >
+                  {pizza.name}
+                </h3>
+
+                {/* Note */}
+                <p
+                  style={{
+                    fontFamily: "var(--font-cinematic, serif)",
+                    fontSize: "0.52rem",
+                    letterSpacing: "0.38em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.18)",
+                    marginBottom: "clamp(1rem, 2vw, 1.8rem)",
+                  }}
+                >
+                  {pizza.note}
+                </p>
+
+                {/* Description */}
+                <p
+                  style={{
+                    fontFamily: "var(--font-cinematic, serif)",
+                    fontSize: "clamp(0.82rem, 1.2vw, 1rem)",
+                    color: "rgba(161,161,170,0.5)",
+                    lineHeight: 1.85,
+                    maxWidth: "68ch",
+                  }}
+                >
+                  {pizza.description}
+                </p>
+              </div>
+            </article>
+
+            {/* Cinematic separator line */}
             <div
+              className="pz-line"
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                paddingTop: "1.3rem",
+                height: "1px",
+                background: `linear-gradient(to right, ${pizza.accentColor.replace(/[\d.]+\)$/, "0.18)")}, rgba(255,255,255,0.04) 40%, transparent)`,
+                transformOrigin: "left center",
               }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-cinematic, serif)",
-                  fontSize: "clamp(1rem, 1.8vw, 1.3rem)",
-                  fontWeight: 400,
-                  color: "rgba(251,191,36,0.82)",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {pizza.price}
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-cinematic, serif)",
-                  fontSize: "0.52rem",
-                  letterSpacing: "0.38em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.18)",
-                }}
-              >
-                {pizza.note}
-              </span>
-            </div>
-          </article>
+            />
+          </div>
         ))}
       </div>
     </section>

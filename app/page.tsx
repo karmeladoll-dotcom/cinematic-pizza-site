@@ -9,26 +9,44 @@ import GrainOverlay from "./components/GrainOverlay";
 import CinematicAmbient from "./components/CinematicAmbient";
 import AtmosphericBridge from "./components/AtmosphericBridge";
 
+/**
+ * Page structure — each section is a "chapter" in the film:
+ *
+ *   Hero         CinematicScene     Pinned ~5500 px — pizza image sequence
+ *   Chapter I    StorySection       Pinned ~2500 px — word-by-word manifesto
+ *   Chapter II   IngredientsSection Pinned ~3000 px — three ingredient frames
+ *   ──── AtmosphericBridge (flour) ────────────────────────────────────────
+ *   Chapter III  SignaturePizzasSection   Normal scroll — editorial pizza list
+ *   ──── AtmosphericBridge (smoke) ────────────────────────────────────────
+ *   Chapter IV   ReservationCTA     Normal scroll — invitation + CTA
+ *
+ * No bridges between pinned sections — each carries its own atmospheric
+ * entrance (oven glow, smoke haze, gradient bleed from the hero).
+ * Bridges appear only between the pinned block and the normal-scroll sections,
+ * and between the two normal-scroll sections.
+ */
 export default function Home() {
   return (
     <>
       <GrainOverlay />
-      {/* Global ambient flour/smoke particles — appear after hero exits */}
+      {/* Global flour + ember ambient particles — emerge as hero exits */}
       <CinematicAmbient />
       <Navbar />
       <main>
+        {/* ── Pinned block: hero → philosophy → source ── */}
         <CinematicScene />
-        {/* ember sparks carry the fire from the hero into the story */}
-        <AtmosphericBridge variant="ember" />
         <StorySection />
-        {/* basil leaves transition from philosophy into craft */}
-        <AtmosphericBridge variant="basil" />
         <IngredientsSection />
-        {/* flour cloud bridges ingredients into the pizza showcase */}
+
+        {/* Flour-cloud bridge: pinned block → cinematic pizza list */}
         <AtmosphericBridge variant="flour" />
+
+        {/* ── Normal-scroll chapters ── */}
         <SignaturePizzasSection />
-        {/* smoke haze softens the transition into the reservation */}
+
+        {/* Smoke bridge: pizzas → reservation */}
         <AtmosphericBridge variant="smoke" />
+
         <ReservationCTA />
       </main>
       <Footer />
