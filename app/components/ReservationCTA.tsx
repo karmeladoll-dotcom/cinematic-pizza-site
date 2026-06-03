@@ -44,7 +44,7 @@ export default function ReservationCTA() {
 
   return (
     <section
-      id="reserve"
+      id="reservation"
       data-pizza-section="reservation"
       ref={sectionRef}
       style={{

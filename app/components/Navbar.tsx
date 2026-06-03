@@ -14,7 +14,7 @@ export default function Navbar() {
   const navLinks = [
     { label: "Menu", href: "#menu" },
     { label: "Story", href: "#story" },
-    { label: "Reserve", href: "#reserve" },
+    { label: "Reserve", href: "#reservation" },
   ];
 
   return (
@@ -95,7 +95,7 @@ export default function Navbar() {
 
         {/* CTA button */}
         <a
-          href="#reserve"
+          href="#reservation"
           className="hidden md:block"
           style={{
             fontFamily: "var(--font-cinematic, serif)",

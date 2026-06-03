@@ -3,6 +3,8 @@ import Navbar from "./components/Navbar";
 import StorySection from "./components/StorySection";
 import IngredientsSection from "./components/IngredientsSection";
 import SignaturePizzasSection from "./components/SignaturePizzasSection";
+import ReserveCtaInline from "@/components/ReserveCtaInline";
+import ReserveCtaProminent from "@/components/ReserveCtaProminent";
 import ReservationCTA from "./components/ReservationCTA";
 import Footer from "./components/Footer";
 import GrainOverlay from "./components/GrainOverlay";
@@ -44,8 +46,17 @@ export default function Home() {
         {/* ── Normal-scroll chapters ── */}
         <SignaturePizzasSection />
 
-        {/* Smoke bridge: pizzas → reservation */}
+        <ReserveCtaInline />
+
+        {/* Smoke bridge: pizzas → exclusivity */}
         <AtmosphericBridge variant="smoke" />
+
+        <section
+          data-pizza-section="exclusivity"
+          style={{ position: "relative", background: "#060606", overflow: "hidden" }}
+        >
+          <ReserveCtaProminent />
+        </section>
 
         <ReservationCTA />
       </main>
