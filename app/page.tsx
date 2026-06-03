@@ -4,7 +4,7 @@ import StorySection from "./components/StorySection";
 import IngredientsSection from "./components/IngredientsSection";
 import SignaturePizzasSection from "./components/SignaturePizzasSection";
 import ReserveCtaInline from "@/components/ReserveCtaInline";
-import ReserveCtaProminent from "@/components/ReserveCtaProminent";
+import ExclusivitySection from "@/components/ExclusivitySection";
 import ReservationCTA from "./components/ReservationCTA";
 import Footer from "./components/Footer";
 import GrainOverlay from "./components/GrainOverlay";
@@ -20,7 +20,8 @@ import AtmosphericBridge from "./components/AtmosphericBridge";
  *   ──── AtmosphericBridge (flour) ────────────────────────────────────────
  *   Chapter III  SignaturePizzasSection   Normal scroll — editorial pizza list
  *   ──── AtmosphericBridge (smoke) ────────────────────────────────────────
- *   Chapter IV   ReservationCTA     Normal scroll — invitation + CTA
+ *   Exclusivity  ExclusivitySection Normal scroll — scarcity moment + CTA
+ *   Chapter IV   ReservationCTA     Normal scroll — invitation + form
  *
  * No bridges between pinned sections — each carries its own atmospheric
  * entrance (oven glow, smoke haze, gradient bleed from the hero).
@@ -51,12 +52,7 @@ export default function Home() {
         {/* Smoke bridge: pizzas → exclusivity */}
         <AtmosphericBridge variant="smoke" />
 
-        <section
-          data-pizza-section="exclusivity"
-          style={{ position: "relative", background: "#060606", overflow: "hidden" }}
-        >
-          <ReserveCtaProminent />
-        </section>
+        <ExclusivitySection />
 
         <ReservationCTA />
       </main>

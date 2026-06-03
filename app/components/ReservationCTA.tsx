@@ -254,8 +254,7 @@ export default function ReservationCTA() {
             opacity: 0,
           }}
         >
-          An intimate dining room. A wood-fired oven burning since dawn.
-          Seventeen covers each evening. One unforgettable meal.
+          Tables open thirty days in advance.
         </p>
 
         {/* CTA Button */}

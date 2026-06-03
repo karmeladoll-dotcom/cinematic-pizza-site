@@ -15,7 +15,7 @@ export default function ReserveCtaProminent() {
   }, []);
 
   return (
-    <div className="flex justify-center pt-10 pb-14 md:pt-16 md:pb-24">
+    <div className="flex justify-center">
       <button
         type="button"
         onClick={() => smoothScrollTo("reservation", 80)}
