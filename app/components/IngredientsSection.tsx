@@ -19,7 +19,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
  * background at near-zero opacity to create layered typographic depth.
  *
  * Progress dots at the bottom track the active frame.
- * A chapter counter top-right shows "I / III", "II / III", "III / III".
  */
 
 const FRAMES = [
@@ -33,7 +32,6 @@ const FRAMES = [
       "Grown in the volcanic soil at the foot of Mount Vesuvius. Sweeter, less acidic — with a dense, fleshy pulp that forms the living soul of our sauce.",
     glow: "radial-gradient(ellipse 85% 80% at 50% 90%, rgba(185,38,38,0.18) 0%, rgba(220,75,50,0.08) 38%, transparent 68%)",
     accentColor: "rgba(220, 85, 60, 0.62)",
-    counterLabel: "I / III",
   },
   {
     roman: "II",
@@ -45,7 +43,6 @@ const FRAMES = [
       "Hand-pulled every morning from local cattle. Delicate and creamy — its silken texture melts into ribbons of silk across the heat of the oven floor.",
     glow: "radial-gradient(ellipse 85% 80% at 50% 85%, rgba(210,185,145,0.15) 0%, rgba(255,235,195,0.07) 40%, transparent 68%)",
     accentColor: "rgba(245, 215, 165, 0.58)",
-    counterLabel: "II / III",
   },
   {
     roman: "III",
@@ -57,7 +54,6 @@ const FRAMES = [
       "Harvested at the peak of the summer season. Fragrant and peppery, with sweet floral top notes that define the character of true Neapolitan cuisine.",
     glow: "radial-gradient(ellipse 85% 80% at 50% 85%, rgba(28,95,48,0.18) 0%, rgba(45,130,60,0.07) 40%, transparent 68%)",
     accentColor: "rgba(80, 165, 80, 0.55)",
-    counterLabel: "III / III",
   },
 ];
 
@@ -69,7 +65,6 @@ export default function IngredientsSection() {
   const frame2Ref   = useRef<HTMLDivElement>(null);
   const frame3Ref   = useRef<HTMLDivElement>(null);
   const dotsRef     = useRef<HTMLDivElement>(null);
-  const counterRef  = useRef<HTMLDivElement>(null);
   const chapterRef  = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,7 +77,6 @@ export default function IngredientsSection() {
       const f3Items = frame3Ref.current?.querySelectorAll<HTMLElement>(".fi");
 
       const dots = dotsRef.current?.querySelectorAll<HTMLElement>(".i-dot");
-      const counters = counterRef.current?.querySelectorAll<HTMLElement>(".i-counter");
 
       /* ── Initial state ── */
       gsap.set(frame2Ref.current, { autoAlpha: 0 });
@@ -90,7 +84,6 @@ export default function IngredientsSection() {
       if (f1Items?.length) gsap.set(Array.from(f1Items), { autoAlpha: 0, y: 22 });
       if (f2Items?.length) gsap.set(Array.from(f2Items), { autoAlpha: 0, y: 22 });
       if (f3Items?.length) gsap.set(Array.from(f3Items), { autoAlpha: 0, y: 22 });
-      if (counters?.length) gsap.set(Array.from(counters).slice(1), { autoAlpha: 0 });
 
       /* ── Master scrub timeline ── */
       const tl = gsap.timeline({
@@ -126,11 +119,6 @@ export default function IngredientsSection() {
       /* Dot 1 activates (t 0.2) */
       if (dots?.length) {
         tl.to(dots[0], { background: "rgba(251,191,36,0.72)", scale: 1.5, duration: 0.3 }, 0.2);
-        tl.to(
-          counterRef.current?.querySelectorAll<HTMLElement>(".i-counter")[0] ?? {},
-          { autoAlpha: 1, duration: 0.4 },
-          0.2
-        );
       }
 
       /* Hold frame 1 (t 2.2→3.0) */
@@ -139,15 +127,10 @@ export default function IngredientsSection() {
       tl.to(frame1Ref.current, { autoAlpha: 0, duration: 0.4 }, 3.0);
       tl.to(frame2Ref.current, { autoAlpha: 1, duration: 0.4 }, 3.0);
 
-      /* Dot / counter update */
+      /* Dot update */
       if (dots?.length) {
         tl.to(dots[0], { background: "rgba(255,255,255,0.18)", scale: 1, duration: 0.3 }, 3.0);
         tl.to(dots[1], { background: "rgba(251,191,36,0.72)", scale: 1.5, duration: 0.3 }, 3.0);
-        const counters2 = counterRef.current?.querySelectorAll<HTMLElement>(".i-counter");
-        if (counters2?.length) {
-          tl.to(counters2[0], { autoAlpha: 0, duration: 0.25 }, 3.0);
-          tl.to(counters2[1], { autoAlpha: 1, duration: 0.4 }, 3.1);
-        }
       }
 
       /* ─────────────── FRAME 2 — Mozzarella ─────────────── */
@@ -170,11 +153,6 @@ export default function IngredientsSection() {
       if (dots?.length) {
         tl.to(dots[1], { background: "rgba(255,255,255,0.18)", scale: 1, duration: 0.3 }, 6.2);
         tl.to(dots[2], { background: "rgba(251,191,36,0.72)", scale: 1.5, duration: 0.3 }, 6.2);
-        const counters3 = counterRef.current?.querySelectorAll<HTMLElement>(".i-counter");
-        if (counters3?.length) {
-          tl.to(counters3[1], { autoAlpha: 0, duration: 0.25 }, 6.2);
-          tl.to(counters3[2], { autoAlpha: 1, duration: 0.4 }, 6.3);
-        }
       }
 
       /* ─────────────── FRAME 3 — Basil ─────────────── */
@@ -386,38 +364,6 @@ export default function IngredientsSection() {
         >
           Chapter II — The Source
         </span>
-      </div>
-
-      {/* ── Frame counter (top-right) ── */}
-      <div
-        ref={counterRef}
-        style={{
-          position: "absolute",
-          top: "clamp(1.5rem, 3vw, 2.5rem)",
-          right: "clamp(1.5rem, 5vw, 5rem)",
-          zIndex: 10,
-        }}
-      >
-        {FRAMES.map((f, i) => (
-          <span
-            key={i}
-            className="i-counter"
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              fontFamily: "var(--font-cinematic, serif)",
-              fontSize: "0.48rem",
-              letterSpacing: "0.48em",
-              textTransform: "uppercase",
-              color: "rgba(251,191,36,0.32)",
-              opacity: i === 0 ? 1 : 0,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {f.counterLabel}
-          </span>
-        ))}
       </div>
 
       {/* ── Three ingredient frames ── */}
