@@ -14,8 +14,8 @@ import GrainOverlay from "./components/GrainOverlay";
  *
  *   Hero         CinematicScene     Pinned — GSAP pizza image sequence
  *   Chapter I    FireChapter        Pinned — oven
- *   Chapter II   SourceChapter      Pinned — tomato → mozzarella → basil
- *   Chapter III  ResultChapter      Pinned — cut → slice → whole pizza
+ *   Chapter II   SourceChapter      Pinned — no video (reset baseline)
+ *   Chapter III  ResultChapter      Pinned — no video (reset baseline)
  *   SignaturePizzasSection · ReservationCTA
  */
 export default function Home() {

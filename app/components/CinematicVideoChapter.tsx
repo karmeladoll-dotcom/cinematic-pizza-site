@@ -69,7 +69,7 @@ export default function CinematicVideoChapter({
     if (!section) return;
 
     const pinPerSlide = getPinPerSlide(pinScrollPerSlide, mobilePinScrollPerSlide);
-    const pinScroll = pinPerSlide * slides.length;
+    const pinScroll = pinPerSlide * Math.max(slides.length, 1);
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const hold = slideHold ?? (isMobile ? 0.16 : 0.2);
     const fade = slideFade ?? (isMobile ? 0.14 : 0.18);
@@ -105,7 +105,9 @@ export default function CinematicVideoChapter({
         },
       });
 
-      tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      if (slides.length > 0) {
+        tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      }
 
       const titleIn = 0.06;
       tl.fromTo(

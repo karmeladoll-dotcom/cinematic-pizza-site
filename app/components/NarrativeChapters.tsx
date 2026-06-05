@@ -1,19 +1,17 @@
 import CinematicVideoChapter from "./CinematicVideoChapter";
 import { VIDEOS } from "../lib/videos";
 
+/**
+ * TEMPORARY NARRATIVE RESET — chapter-by-chapter rebuild baseline.
+ * Active video: oven.mp4 only (Chapter I).
+ * Chapters II & III retain structure, no videos yet.
+ */
+
 const FIRE_SLIDES = [{ src: VIDEOS.oven }];
 
-const SOURCE_SLIDES = [
-  { src: VIDEOS.tomato, label: "I — San Marzano · Campania" },
-  { src: VIDEOS.mozzarela, label: "II — Fior di Latte · Agerola" },
-  { src: VIDEOS.basil, label: "III — Genovese Basil" },
-];
+const SOURCE_SLIDES: { src: string; label?: string }[] = [];
 
-const RESULT_SLIDES = [
-  { src: VIDEOS.cut },
-  { src: VIDEOS.slice },
-  { src: VIDEOS.sliceWholePizza },
-];
+const RESULT_SLIDES: { src: string }[] = [];
 
 export default function FireChapterSection() {
   return (
@@ -38,11 +36,9 @@ export function SourceChapterSection() {
       title="The Source"
       chapterLabel="CHAPTER II — The Source"
       slides={SOURCE_SLIDES}
-      pinScrollPerSlide={620}
-      mobilePinScrollPerSlide={380}
-      titleHold={0.38}
-      slideHold={0.24}
-      slideFade={0.2}
+      pinScrollPerSlide={420}
+      mobilePinScrollPerSlide={280}
+      titleHold={0.22}
     />
   );
 }
@@ -55,11 +51,9 @@ export function ResultChapterSection() {
       title="The Result"
       chapterLabel="CHAPTER III — The Result"
       slides={RESULT_SLIDES}
-      pinScrollPerSlide={380}
-      mobilePinScrollPerSlide={260}
-      titleHold={0.2}
-      slideHold={0.12}
-      slideFade={0.16}
+      pinScrollPerSlide={420}
+      mobilePinScrollPerSlide={280}
+      titleHold={0.22}
     />
   );
 }
