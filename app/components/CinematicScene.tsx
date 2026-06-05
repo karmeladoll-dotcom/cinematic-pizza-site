@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-const TOTAL_FRAMES = 121;
-/** Last 0-based index for pure whole-pizza rotation (ezgif-frame-025.png). Frame 026+ is ingredient imagery. */
+/** Hero plays frames 001–025 only (ezgif-frame-001.png … ezgif-frame-025.png). */
 const ROTATION_END_FRAME = 24;
+const HERO_FRAME_COUNT = ROTATION_END_FRAME + 1;
 
 function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
@@ -56,11 +56,12 @@ export default function CinematicScene() {
     }
 
     function drawFrame(index: number) {
-      const img = images[index];
+      const idx = Math.min(Math.max(0, index), ROTATION_END_FRAME);
+      const img = images[idx];
       if (!img?.complete || !img.naturalWidth) return;
 
       const isMobile = canvas.width < 768;
-      const progress = index / (TOTAL_FRAMES - 1);
+      const progress = ROTATION_END_FRAME > 0 ? idx / ROTATION_END_FRAME : 0;
       const scale = 1 + progress * (isMobile ? 0.02 : 0.05);
 
       const imgAspect = img.naturalWidth / img.naturalHeight;
@@ -179,12 +180,9 @@ export default function CinematicScene() {
           ease: "none",
           duration: FRAME_PLAY,
           onUpdate() {
-            const idx = Math.min(
-              Math.round(frameObj.frame),
-              ROTATION_END_FRAME
-            );
-            if (idx !== currentFrame) {
-              currentFrame = idx;
+            const clamped = Math.min(Math.round(frameObj.frame), ROTATION_END_FRAME);
+            if (clamped !== currentFrame) {
+              currentFrame = clamped;
               drawFrame(currentFrame);
             }
           },
@@ -282,15 +280,15 @@ export default function CinematicScene() {
     setupCanvas();
     let loaded = 0;
 
-    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+    for (let i = 1; i <= HERO_FRAME_COUNT; i++) {
       const img = new Image();
       img.src = frameSrc(i);
       const onSettled = () => {
         loaded++;
-        const pct = Math.round((loaded / TOTAL_FRAMES) * 100);
+        const pct = Math.round((loaded / HERO_FRAME_COUNT) * 100);
         if (loadingBarRef.current) loadingBarRef.current.style.width = `${pct}%`;
         if (loadingPctRef.current) loadingPctRef.current.textContent = `${pct}`;
-        if (loaded === TOTAL_FRAMES) initAnimations();
+        if (loaded === HERO_FRAME_COUNT) initAnimations();
       };
       img.onload = onSettled;
       img.onerror = onSettled;
