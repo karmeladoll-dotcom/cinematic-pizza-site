@@ -5,8 +5,11 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const TOTAL_FRAMES = 121;
-/** Stop before ingredient-disassembly frames — rotation only */
-const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.68);
+/**
+ * Last frame index for the pure rotation beat (0-based).
+ * Frames beyond ~45% of the sequence show cheese stretch, basil, tomato disassembly.
+ */
+const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.45);
 
 function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
@@ -134,8 +137,19 @@ export default function CinematicScene() {
       gsap.set(lineRef.current, { scaleX: 0, transformOrigin: "center center" });
 
       const frameObj = { frame: 0 };
-      const ROTATION_END = 5.2;
-      const PIN_SCROLL = 2800;
+      /* Rotation plays first, then holds on final frame — no ingredient tail */
+      const FRAME_PLAY = 2.6;
+      const TITLE_IN_AT = 2.0;
+      const TITLE_HOLD = 0.45;
+      const FADE_OUT = 0.7;
+      const PIN_SCROLL = 2200;
+
+      const lockRotationFrame = () => {
+        if (currentFrame !== ROTATION_END_FRAME) {
+          currentFrame = ROTATION_END_FRAME;
+          drawFrame(currentFrame);
+        }
+      };
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -146,10 +160,17 @@ export default function CinematicScene() {
           scrub: 0.55,
           anticipatePin: 1,
           onLeave: () => {
-            gsap.set(heroVisualsRef.current, { autoAlpha: 0, visibility: "hidden" });
+            lockRotationFrame();
+            gsap.set(heroVisualsRef.current, {
+              autoAlpha: 0,
+              visibility: "hidden",
+            });
           },
           onEnterBack: () => {
-            gsap.set(heroVisualsRef.current, { autoAlpha: 1, visibility: "visible" });
+            gsap.set(heroVisualsRef.current, {
+              autoAlpha: 1,
+              visibility: "visible",
+            });
           },
         },
       });
@@ -159,40 +180,50 @@ export default function CinematicScene() {
         {
           frame: ROTATION_END_FRAME,
           ease: "none",
-          duration: ROTATION_END,
+          duration: FRAME_PLAY,
           onUpdate() {
-            const idx = Math.min(Math.round(frameObj.frame), ROTATION_END_FRAME);
+            const idx = Math.min(
+              Math.round(frameObj.frame),
+              ROTATION_END_FRAME
+            );
             if (idx !== currentFrame) {
               currentFrame = idx;
               drawFrame(currentFrame);
             }
           },
+          onComplete: lockRotationFrame,
         },
         0
       );
 
       tl.to(
         lineRef.current,
-        { scaleX: 1, autoAlpha: 1, duration: 0.6, ease: "power2.out" },
-        0.35
+        { scaleX: 1, autoAlpha: 1, duration: 0.5, ease: "power2.out" },
+        TITLE_IN_AT - 0.15
       );
 
       tl.to(
         headlineRef.current,
-        { autoAlpha: 1, y: 0, duration: 1.1, ease: "power3.out" },
-        0.5
+        { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" },
+        TITLE_IN_AT
       );
 
-      const exitStart = ROTATION_END - 1.1;
+      const exitStart = FRAME_PLAY + TITLE_HOLD;
 
       tl.to(
-        [headlineRef.current, lineRef.current, scrollHintRef.current],
+        scrollHintRef.current,
+        { autoAlpha: 0, duration: 0.35, ease: "power2.in" },
+        exitStart - 0.1
+      );
+
+      tl.to(
+        [headlineRef.current, lineRef.current],
         {
           autoAlpha: 0,
-          y: -30,
-          duration: 0.7,
+          y: -28,
+          duration: FADE_OUT,
           ease: "power2.in",
-          stagger: 0.05,
+          stagger: 0.04,
         },
         exitStart
       );
@@ -201,24 +232,26 @@ export default function CinematicScene() {
         particlesCanvas,
         {
           autoAlpha: 0,
-          duration: 0.55,
+          duration: FADE_OUT * 0.85,
           ease: "power2.in",
           onComplete: () => cancelAnimationFrame(rafId),
         },
-        exitStart + 0.15
+        exitStart
       );
 
       tl.to(
         canvas,
-        { autoAlpha: 0, duration: 0.65, ease: "power2.in" },
-        exitStart + 0.25
+        { autoAlpha: 0, duration: FADE_OUT, ease: "power2.in" },
+        exitStart + 0.08
       );
 
       tl.to(
         heroVisualsRef.current,
-        { autoAlpha: 0, duration: 0.4, ease: "power2.in" },
-        exitStart + 0.55
+        { autoAlpha: 0, duration: FADE_OUT * 0.6, ease: "power2.in" },
+        exitStart + FADE_OUT * 0.4
       );
+
+      tl.call(lockRotationFrame, undefined, exitStart);
 
       gsap.to(loadingRef.current, {
         autoAlpha: 0,
