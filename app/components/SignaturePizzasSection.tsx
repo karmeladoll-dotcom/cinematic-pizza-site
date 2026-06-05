@@ -5,7 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /**
- * Chapter III — The Creation
+ * Signature Pizzas — editorial menu list.
  *
  * Transforms the standard card grid into a cinematic editorial list.
  * Each pizza is a full-width row — a film frame, not a product tile.
@@ -155,7 +155,7 @@ export default function SignaturePizzasSection() {
             marginBottom: "1.3rem",
           }}
         >
-          The Creation
+          The Menu
         </span>
         <h2
           style={{

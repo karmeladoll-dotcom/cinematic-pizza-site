@@ -5,17 +5,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 /**
- * Chapter IV — The Invitation
- *
- * The final section of the film.  The oven has been burning since before
- * dawn; seventeen covers; one unforgettable meal.
- *
- * Enhancements over the original:
- *  • Three CSS smoke wisps rise from the bottom — pure CSS keyframe
- *    animations (no RAF overhead) for cinematic haze.
- *  • Two-layer oven glow: a wide diffuse field + a bright inner core.
- *  • Chapter indicator and a thin gold border accent.
- *  • Existing copy and CTA preserved verbatim.
+ * Reservation CTA — conversion-focused finale after the menu.
  */
 export default function ReservationCTA() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -177,32 +167,8 @@ export default function ReservationCTA() {
         }}
       />
 
-      {/* ── Chapter indicator ── */}
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: "clamp(1.5rem, 3vw, 2.5rem)",
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-cinematic, serif)",
-            fontSize: "0.48rem",
-            letterSpacing: "0.52em",
-            textTransform: "uppercase",
-            color: "rgba(251,191,36,0.28)",
-          }}
-        >
-          The Invitation
-        </span>
-      </div>
-
       {/* ── Content ── */}
       <div ref={itemsRef}>
-        {/* Label */}
         <span
           className="cta-item"
           style={{
@@ -216,10 +182,9 @@ export default function ReservationCTA() {
             opacity: 0,
           }}
         >
-          An Invitation
+          Your Table Awaits
         </span>
 
-        {/* Main heading */}
         <h2
           className="cta-item"
           style={{
@@ -233,14 +198,13 @@ export default function ReservationCTA() {
             opacity: 0,
           }}
         >
-          Reserve Your
+          Ready to
           <br />
           <em style={{ fontStyle: "italic", color: "rgba(251,191,36,0.92)" }}>
-            Experience
+            Taste It?
           </em>
         </h2>
 
-        {/* Supporting text */}
         <p
           className="cta-item"
           style={{
@@ -254,7 +218,7 @@ export default function ReservationCTA() {
             opacity: 0,
           }}
         >
-          Tables open thirty days in advance.
+          Seventeen covers each evening. Tables open thirty days in advance.
         </p>
 
         {/* CTA Button */}

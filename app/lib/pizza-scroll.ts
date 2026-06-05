@@ -34,7 +34,6 @@ export type PizzaChapter =
   | "hero"
   | "story"
   | "ingredients"
-  | "craft"
   | "result"
   | "pizzas"
   | "reservation";
@@ -67,7 +66,6 @@ export const CHAPTER_SELECTORS: Record<PizzaChapter, string> = {
   hero: "[data-pizza-section='hero']",
   story: "[data-pizza-section='story']",
   ingredients: "[data-pizza-section='ingredients']",
-  craft: "[data-pizza-section='craft']",
   result: "[data-pizza-section='result']",
   pizzas: "[data-pizza-section='pizzas']",
   reservation: "[data-pizza-section='reservation']",

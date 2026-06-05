@@ -5,12 +5,10 @@ import { VIDEOS } from "../lib/videos";
 const FIRE_SLIDES = [{ src: VIDEOS.oven }, { src: VIDEOS.flour }];
 
 const SOURCE_SLIDES = [
-  { src: VIDEOS.tomato, label: "San Marzano · Campania" },
-  { src: VIDEOS.mozzarela, label: "Fior di Latte · Agerola" },
-  { src: VIDEOS.basil, label: "Genovese · Highlands" },
+  { src: VIDEOS.tomato, label: "I — San Marzano · Campania" },
+  { src: VIDEOS.mozzarela, label: "II — Fior di Latte · Agerola" },
+  { src: VIDEOS.basil, label: "III — Genovese Basil" },
 ];
-
-const CRAFT_SLIDES = [{ src: VIDEOS.doughWork, weight: 1.2 }];
 
 const RESULT_SLIDES = [
   { src: VIDEOS.cut },
@@ -28,8 +26,6 @@ export default function FireChapterSection() {
       slides={FIRE_SLIDES}
       pinScrollPerSlide={780}
       mobilePinScrollPerSlide={460}
-      blendOutSrc={VIDEOS.tomato}
-      overlapPrevVh={12}
     />
   );
 }
@@ -44,22 +40,6 @@ export function SourceChapterSection() {
       slides={SOURCE_SLIDES}
       pinScrollPerSlide={820}
       mobilePinScrollPerSlide={480}
-      blendOutSrc={VIDEOS.doughWork}
-      overlapPrevVh={10}
-    />
-  );
-}
-
-export function CraftChapterSection() {
-  return (
-    <SequentialVideoChapter
-      id="craft"
-      dataSection="craft"
-      title="The Craft"
-      chapterLabel="CHAPTER III — The Craft"
-      slides={CRAFT_SLIDES}
-      blendOutSrc={VIDEOS.cut}
-      overlapPrevVh={14}
     />
   );
 }
@@ -70,9 +50,8 @@ export function ResultChapterSection() {
       id="result"
       dataSection="result"
       title="The Result"
-      chapterLabel="CHAPTER IV — The Result"
+      chapterLabel="CHAPTER III — The Result"
       slides={RESULT_SLIDES}
-      overlapPrevVh={14}
     />
   );
 }
