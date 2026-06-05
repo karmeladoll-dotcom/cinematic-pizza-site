@@ -155,7 +155,7 @@ export default function SignaturePizzasSection() {
             marginBottom: "1.3rem",
           }}
         >
-          Chapter III — The Creation
+          The Creation
         </span>
         <h2
           style={{

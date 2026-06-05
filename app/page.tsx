@@ -11,27 +11,21 @@ import ExclusivitySection from "@/components/ExclusivitySection";
 import ReservationCTA from "./components/ReservationCTA";
 import Footer from "./components/Footer";
 import GrainOverlay from "./components/GrainOverlay";
-import CinematicAmbient from "./components/CinematicAmbient";
-import AtmosphericBridge from "./components/AtmosphericBridge";
 
 /**
  * Page structure — cinematic five-chapter scroll narrative:
  *
- *   Hero         CinematicScene        Pinned — GSAP pizza image sequence
- *   Chapter I    FireChapter           Pinned — oven → flour → dough
- *   Chapter II   SourceChapter         Pinned — tomato → mozzarella → basil
- *   Chapter III  CraftChapter          Sequential — dough-work → sauce → oil → prep
- *   Chapter IV   ResultChapter         Sequential — cut → slice → whole pizza
- *   ──── AtmosphericBridge (flour) ────────────────────────────────────────
- *   SignaturePizzasSection
- *   ExclusivitySection
- *   ReservationCTA
+ *   Hero         CinematicScene     Pinned — GSAP pizza image sequence
+ *   Chapter I    FireChapter        Pinned — oven → flour
+ *   Chapter II   SourceChapter      Pinned — tomato → mozzarella → basil
+ *   Chapter III  CraftChapter       Sequential — dough-work (defining shot)
+ *   Chapter IV   ResultChapter      Sequential — cut → slice → whole pizza
+ *   SignaturePizzasSection · ExclusivitySection · ReservationCTA
  */
 export default function Home() {
   return (
     <>
       <GrainOverlay />
-      <CinematicAmbient />
       <Navbar />
       <main>
         <CinematicScene />
@@ -40,13 +34,9 @@ export default function Home() {
         <CraftChapterSection />
         <ResultChapterSection />
 
-        <AtmosphericBridge variant="flour" />
-
         <SignaturePizzasSection />
 
         <ReserveCtaInline />
-
-        <AtmosphericBridge variant="smoke" />
 
         <ExclusivitySection />
 

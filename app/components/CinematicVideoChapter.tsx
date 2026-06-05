@@ -16,14 +16,22 @@ interface CinematicVideoChapterProps {
   chapterLabel: string;
   slides: VideoSlide[];
   pinScrollPerSlide?: number;
+  mobilePinScrollPerSlide?: number;
   lazyLoad?: boolean;
-  /** Fade title after first slide begins */
   fadeTitleOnScroll?: boolean;
+}
+
+function getPinPerSlide(
+  desktop: number,
+  mobile?: number
+): number {
+  if (typeof window === "undefined") return desktop;
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
+  return isMobile ? (mobile ?? Math.round(desktop * 0.58)) : desktop;
 }
 
 /**
  * Pinned scroll chapter — full-bleed videos crossfade on scroll.
- * Used for Fire and Source narrative moments.
  */
 export default function CinematicVideoChapter({
   id,
@@ -31,7 +39,8 @@ export default function CinematicVideoChapter({
   title,
   chapterLabel,
   slides,
-  pinScrollPerSlide = 900,
+  pinScrollPerSlide = 750,
+  mobilePinScrollPerSlide,
   lazyLoad = true,
   fadeTitleOnScroll = true,
 }: CinematicVideoChapterProps) {
@@ -42,13 +51,15 @@ export default function CinematicVideoChapter({
   const labelRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
-  const pinScroll = pinScrollPerSlide * slides.length;
-
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     const section = sectionRef.current;
     if (!section) return;
+
+    const pinPerSlide = getPinPerSlide(pinScrollPerSlide, mobilePinScrollPerSlide);
+    const pinScroll = pinPerSlide * slides.length;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
     if (lazyLoad) {
       const observer = new IntersectionObserver(
@@ -66,7 +77,7 @@ export default function CinematicVideoChapter({
             observer.disconnect();
           });
         },
-        { rootMargin: "240px 0px" }
+        { rootMargin: "320px 0px" }
       );
       observer.observe(section);
     }
@@ -78,7 +89,7 @@ export default function CinematicVideoChapter({
       });
       labelRefs.current.forEach((label, i) => {
         if (!label) return;
-        gsap.set(label, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 12 });
+        gsap.set(label, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 10 });
       });
 
       const tl = gsap.timeline({
@@ -87,31 +98,31 @@ export default function CinematicVideoChapter({
           start: "top top",
           end: `+=${pinScroll}`,
           pin: true,
-          scrub: 0.8,
+          scrub: isMobile ? 0.45 : 0.65,
           anticipatePin: 1,
         },
       });
 
       tl.fromTo(
         chapterRef.current,
-        { autoAlpha: 0, x: -16 },
-        { autoAlpha: 1, x: 0, duration: 0.6, ease: "power2.out" },
+        { autoAlpha: 0, x: -12 },
+        { autoAlpha: 1, x: 0, duration: 0.4, ease: "power2.out" },
         0
       );
 
       tl.fromTo(
         titleRef.current,
-        { autoAlpha: 0, y: 18 },
-        { autoAlpha: 1, y: 0, duration: 0.8, ease: "power2.out" },
-        0.1
+        { autoAlpha: 0, y: 14 },
+        { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out" },
+        0.05
       );
 
       if (fadeTitleOnScroll) {
-        tl.to(titleRef.current, { autoAlpha: 0.22, duration: 0.5 }, 0.6);
+        tl.to(titleRef.current, { autoAlpha: 0.18, duration: 0.35 }, 0.45);
       }
 
-      const hold = 0.45;
-      const fade = 0.3;
+      const hold = isMobile ? 0.22 : 0.3;
+      const fade = isMobile ? 0.18 : 0.22;
 
       for (let i = 0; i < slides.length - 1; i++) {
         const t = i + hold;
@@ -120,14 +131,14 @@ export default function CinematicVideoChapter({
         tl.to(slideRefs.current[i + 1], { autoAlpha: 1, duration: fade }, t);
 
         if (labelRefs.current[i]) {
-          tl.to(labelRefs.current[i], { autoAlpha: 0, y: -8, duration: fade * 0.8 }, t);
+          tl.to(labelRefs.current[i], { autoAlpha: 0, y: -6, duration: fade * 0.75 }, t);
         }
         if (labelRefs.current[i + 1]) {
           tl.fromTo(
             labelRefs.current[i + 1],
-            { autoAlpha: 0, y: 12 },
-            { autoAlpha: 1, y: 0, duration: fade * 1.2, ease: "power2.out" },
-            t + fade * 0.25
+            { autoAlpha: 0, y: 10 },
+            { autoAlpha: 1, y: 0, duration: fade, ease: "power2.out" },
+            t + fade * 0.2
           );
         }
 
@@ -145,11 +156,17 @@ export default function CinematicVideoChapter({
         );
       }
 
-      tl.to({}, { duration: hold + 0.4 });
+      tl.to({}, { duration: hold * 0.5 });
     }, sectionRef);
 
-    return () => ctx.revert();
-  }, [slides.length, pinScroll, lazyLoad, fadeTitleOnScroll]);
+    const onResize = () => ScrollTrigger.refresh();
+    window.addEventListener("resize", onResize, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ctx.revert();
+    };
+  }, [slides.length, pinScrollPerSlide, mobilePinScrollPerSlide, lazyLoad, fadeTitleOnScroll]);
 
   const hasLabels = slides.some((s) => s.label);
 
@@ -163,6 +180,7 @@ export default function CinematicVideoChapter({
         background: "#000",
         height: "100vh",
         overflow: "hidden",
+        marginTop: -1,
       }}
     >
       {slides.map((slide, i) => (
@@ -201,7 +219,7 @@ export default function CinematicVideoChapter({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, transparent 24%, transparent 76%, rgba(0,0,0,0.5) 100%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.45) 100%)",
           pointerEvents: "none",
           zIndex: 2,
         }}

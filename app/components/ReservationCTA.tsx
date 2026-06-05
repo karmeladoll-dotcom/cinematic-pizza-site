@@ -196,7 +196,7 @@ export default function ReservationCTA() {
             color: "rgba(251,191,36,0.28)",
           }}
         >
-          Chapter IV — The Invitation
+          The Invitation
         </span>
       </div>
 

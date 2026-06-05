@@ -2,11 +2,7 @@ import CinematicVideoChapter from "./CinematicVideoChapter";
 import SequentialVideoChapter from "./SequentialVideoChapter";
 import { VIDEOS } from "../lib/videos";
 
-const FIRE_SLIDES = [
-  { src: VIDEOS.oven },
-  { src: VIDEOS.flour },
-  { src: VIDEOS.dough },
-];
+const FIRE_SLIDES = [{ src: VIDEOS.oven }, { src: VIDEOS.flour }];
 
 const SOURCE_SLIDES = [
   { src: VIDEOS.tomato, label: "San Marzano · Campania" },
@@ -14,12 +10,7 @@ const SOURCE_SLIDES = [
   { src: VIDEOS.basil, label: "Genovese · Highlands" },
 ];
 
-const CRAFT_SLIDES = [
-  { src: VIDEOS.doughWork },
-  { src: VIDEOS.sause },
-  { src: VIDEOS.oliveOil },
-  { src: VIDEOS.preparation },
-];
+const CRAFT_SLIDES = [{ src: VIDEOS.doughWork, weight: 1.2 }];
 
 const RESULT_SLIDES = [
   { src: VIDEOS.cut },
@@ -32,10 +23,11 @@ export default function FireChapterSection() {
     <CinematicVideoChapter
       id="story"
       dataSection="story"
-      title="Born from fire"
-      chapterLabel="Chapter I — Fire"
+      title="Born From Fire"
+      chapterLabel="CHAPTER I — Born From Fire"
       slides={FIRE_SLIDES}
-      pinScrollPerSlide={1000}
+      pinScrollPerSlide={780}
+      mobilePinScrollPerSlide={460}
     />
   );
 }
@@ -46,9 +38,10 @@ export function SourceChapterSection() {
       id="menu"
       dataSection="ingredients"
       title="The Source"
-      chapterLabel="Chapter II — The Source"
+      chapterLabel="CHAPTER II — The Source"
       slides={SOURCE_SLIDES}
-      pinScrollPerSlide={1100}
+      pinScrollPerSlide={820}
+      mobilePinScrollPerSlide={480}
     />
   );
 }
@@ -59,7 +52,7 @@ export function CraftChapterSection() {
       id="craft"
       dataSection="craft"
       title="The Craft"
-      chapterLabel="Chapter III — The Craft"
+      chapterLabel="CHAPTER III — The Craft"
       slides={CRAFT_SLIDES}
     />
   );
@@ -71,7 +64,7 @@ export function ResultChapterSection() {
       id="result"
       dataSection="result"
       title="The Result"
-      chapterLabel="Chapter IV — The Result"
+      chapterLabel="CHAPTER IV — The Result"
       slides={RESULT_SLIDES}
     />
   );
