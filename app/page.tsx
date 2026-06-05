@@ -13,9 +13,9 @@ import GrainOverlay from "./components/GrainOverlay";
  * Page structure — three-chapter scroll narrative:
  *
  *   Hero         CinematicScene     Pinned — GSAP pizza image sequence
- *   Chapter I    FireChapter        Pinned — oven → flour
+ *   Chapter I    FireChapter        Pinned — oven
  *   Chapter II   SourceChapter      Pinned — tomato → mozzarella → basil
- *   Chapter III  ResultChapter      Sequential — cut → slice → whole pizza
+ *   Chapter III  ResultChapter      Pinned — cut → slice → whole pizza
  *   SignaturePizzasSection · ReservationCTA
  */
 export default function Home() {

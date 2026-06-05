@@ -5,8 +5,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const TOTAL_FRAMES = 121;
-/** Last frame index for the rotation beat — excludes ingredient-disassembly tail */
-const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.86);
+/** Stop before ingredient-disassembly frames — rotation only */
+const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.68);
 
 function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
@@ -25,12 +25,11 @@ interface Particle {
 
 export default function CinematicScene() {
   const sectionRef = useRef<HTMLElement>(null);
+  const heroVisualsRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesCanvasRef = useRef<HTMLCanvasElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
-  const subtitleRef = useRef<HTMLParagraphElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
-  const taglineRef = useRef<HTMLSpanElement>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
   const loadingBarRef = useRef<HTMLDivElement>(null);
   const loadingPctRef = useRef<HTMLSpanElement>(null);
@@ -60,12 +59,9 @@ export default function CinematicScene() {
       const img = images[index];
       if (!img?.complete || !img.naturalWidth) return;
 
-      // Mobile breakpoint — portrait phones and small tablets
       const isMobile = canvas.width < 768;
-
-      // Progressive cinematic zoom — gentler on mobile so the pizza stays fully visible
       const progress = index / (TOTAL_FRAMES - 1);
-      const scale = 1 + progress * (isMobile ? 0.025 : 0.07);
+      const scale = 1 + progress * (isMobile ? 0.02 : 0.05);
 
       const imgAspect = img.naturalWidth / img.naturalHeight;
       const canvasAspect = canvas.width / canvas.height;
@@ -73,9 +69,6 @@ export default function CinematicScene() {
       let drawW: number, drawH: number;
 
       if (isMobile) {
-        // Contain-style on mobile: fit the whole pizza within the viewport.
-        // Landscape images fit by width; portrait/square images fit by height.
-        // A 0.88 padding factor adds breathing room and keeps the look cinematic.
         const containPad = 0.88;
         if (imgAspect > canvasAspect) {
           drawW = canvas.width * containPad * scale;
@@ -85,7 +78,6 @@ export default function CinematicScene() {
           drawW = drawH * imgAspect;
         }
       } else {
-        // Desktop: cover-style — image fills the full canvas with a subtle zoom-in
         if (imgAspect > canvasAspect) {
           drawH = canvas.height * scale;
           drawW = drawH * imgAspect;
@@ -95,19 +87,13 @@ export default function CinematicScene() {
         }
       }
 
-      // Centre the image on both axes
       const drawX = (canvas.width - drawW) / 2;
       const drawY = (canvas.height - drawH) / 2;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
-
-      // [PIZZA-SCROLL-HOOK] Future: emit the current frame index and progress
-      // to the global pizza scroll context so downstream sections can react.
-      // pizzaScrollEmit({ frame: index, progress });
     }
 
-    // ---------- particles ----------
     const particles: Particle[] = Array.from({ length: 70 }, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
@@ -139,30 +125,17 @@ export default function CinematicScene() {
       rafId = requestAnimationFrame(animateParticles);
     }
 
-    // ---------- main init after preload ----------
     function initAnimations() {
       drawFrame(0);
       animateParticles();
 
-      // Set initial hidden states
-      gsap.set(
-        [
-          headlineRef.current,
-          subtitleRef.current,
-          lineRef.current,
-          taglineRef.current,
-        ],
-        { autoAlpha: 0 }
-      );
-      gsap.set(headlineRef.current, { y: 70 });
-      gsap.set(subtitleRef.current, { y: 40 });
-      gsap.set(taglineRef.current, { y: 20 });
-      gsap.set(lineRef.current, { scaleX: 0, transformOrigin: "left center" });
+      gsap.set([headlineRef.current, lineRef.current], { autoAlpha: 0 });
+      gsap.set(headlineRef.current, { y: 50 });
+      gsap.set(lineRef.current, { scaleX: 0, transformOrigin: "center center" });
 
       const frameObj = { frame: 0 };
-      /* Pizza rotation completes when typography exits — no tail frames or particle limbo */
-      const ROTATION_END = 7.8;
-      const PIN_SCROLL = 4400;
+      const ROTATION_END = 5.2;
+      const PIN_SCROLL = 2800;
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -170,12 +143,17 @@ export default function CinematicScene() {
           start: "top top",
           end: `+=${PIN_SCROLL}`,
           pin: true,
-          scrub: 0.6,
+          scrub: 0.55,
           anticipatePin: 1,
+          onLeave: () => {
+            gsap.set(heroVisualsRef.current, { autoAlpha: 0, visibility: "hidden" });
+          },
+          onEnterBack: () => {
+            gsap.set(heroVisualsRef.current, { autoAlpha: 1, visibility: "visible" });
+          },
         },
       });
 
-      // Frame sequence — ends with rotation, not ingredient tail frames
       tl.to(
         frameObj,
         {
@@ -183,10 +161,7 @@ export default function CinematicScene() {
           ease: "none",
           duration: ROTATION_END,
           onUpdate() {
-            const idx = Math.min(
-              Math.round(frameObj.frame),
-              TOTAL_FRAMES - 1
-            );
+            const idx = Math.min(Math.round(frameObj.frame), ROTATION_END_FRAME);
             if (idx !== currentFrame) {
               currentFrame = idx;
               drawFrame(currentFrame);
@@ -196,82 +171,55 @@ export default function CinematicScene() {
         0
       );
 
-      // Decorative line sweeps in
       tl.to(
         lineRef.current,
-        { scaleX: 1, autoAlpha: 1, duration: 0.8, ease: "power2.out" },
-        0.4
+        { scaleX: 1, autoAlpha: 1, duration: 0.6, ease: "power2.out" },
+        0.35
       );
 
-      // Tagline
-      tl.to(
-        taglineRef.current,
-        { autoAlpha: 0.55, y: 0, duration: 0.8, ease: "power2.out" },
-        0.6
-      );
-
-      // Headline crashes in
       tl.to(
         headlineRef.current,
-        { autoAlpha: 1, y: 0, duration: 1.4, ease: "power3.out" },
-        0.7
+        { autoAlpha: 1, y: 0, duration: 1.1, ease: "power3.out" },
+        0.5
       );
 
-      // Subtitle fades up after headline
-      tl.to(
-        subtitleRef.current,
-        { autoAlpha: 0.75, y: 0, duration: 1.2, ease: "power3.out" },
-        1.1
-      );
+      const exitStart = ROTATION_END - 1.1;
 
-      // --- typography exits, hero visual layers dissolve for Fire handoff ---
       tl.to(
-        [
-          headlineRef.current,
-          subtitleRef.current,
-          lineRef.current,
-          taglineRef.current,
-        ],
+        [headlineRef.current, lineRef.current, scrollHintRef.current],
         {
           autoAlpha: 0,
-          y: -40,
-          duration: 0.9,
+          y: -30,
+          duration: 0.7,
           ease: "power2.in",
-          stagger: 0.06,
+          stagger: 0.05,
         },
-        ROTATION_END - 0.9
-      );
-
-      tl.to(
-        scrollHintRef.current,
-        { autoAlpha: 0, duration: 0.5, ease: "power2.in" },
-        ROTATION_END - 0.7
+        exitStart
       );
 
       tl.to(
         particlesCanvas,
         {
           autoAlpha: 0,
-          duration: 0.65,
-          ease: "power2.inOut",
+          duration: 0.55,
+          ease: "power2.in",
           onComplete: () => cancelAnimationFrame(rafId),
         },
-        ROTATION_END - 0.5
+        exitStart + 0.15
       );
 
       tl.to(
         canvas,
-        { autoAlpha: 0, duration: 0.75, ease: "power2.inOut" },
-        ROTATION_END - 0.35
+        { autoAlpha: 0, duration: 0.65, ease: "power2.in" },
+        exitStart + 0.25
       );
 
-      // [PIZZA-SCROLL-HOOK] Future: at this position in the timeline the hero
-      // section hands the pizza off to the next storytelling section.
-      // The ScrollTrigger `onLeave` callback below is the intended integration
-      // point — connect it to the global pizza scroll context when ready.
-      // tl.scrollTrigger.vars.onLeave = () => pizzaScrollContext.handOff("story");
+      tl.to(
+        heroVisualsRef.current,
+        { autoAlpha: 0, duration: 0.4, ease: "power2.in" },
+        exitStart + 0.55
+      );
 
-      // Fade out the loading overlay
       gsap.to(loadingRef.current, {
         autoAlpha: 0,
         duration: 1.4,
@@ -279,16 +227,15 @@ export default function CinematicScene() {
         delay: 0.2,
       });
 
-      // Scroll hint fades in then breathes
       gsap.fromTo(
         scrollHintRef.current,
         { autoAlpha: 0, y: 10 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: 1.2,
+          duration: 1.0,
           ease: "power2.out",
-          delay: 1.8,
+          delay: 1.4,
           onComplete() {
             gsap.to(scrollHintRef.current, {
               y: 6,
@@ -302,7 +249,6 @@ export default function CinematicScene() {
       );
     }
 
-    // ---------- preload ----------
     setupCanvas();
     let loaded = 0;
 
@@ -312,8 +258,7 @@ export default function CinematicScene() {
       const onSettled = () => {
         loaded++;
         const pct = Math.round((loaded / TOTAL_FRAMES) * 100);
-        if (loadingBarRef.current)
-          loadingBarRef.current.style.width = `${pct}%`;
+        if (loadingBarRef.current) loadingBarRef.current.style.width = `${pct}%`;
         if (loadingPctRef.current) loadingPctRef.current.textContent = `${pct}`;
         if (loaded === TOTAL_FRAMES) initAnimations();
       };
@@ -338,14 +283,13 @@ export default function CinematicScene() {
 
   return (
     <>
-      {/* ── Loading overlay ── */}
       <div
         ref={loadingRef}
         className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center"
       >
         <div className="flex flex-col items-center gap-8 w-64">
           <span className="text-[10px] tracking-[0.5em] uppercase text-zinc-600 font-light">
-            Loading Experience
+            Loading
           </span>
 
           <div className="relative w-full h-px bg-zinc-900 overflow-visible">
@@ -373,143 +317,110 @@ export default function CinematicScene() {
         </div>
       </div>
 
-      {/* ── Cinematic section ── */}
       <section
         ref={sectionRef}
         data-pizza-section="hero"
         className="relative w-full bg-black overflow-hidden"
         style={{ height: "100vh" }}
       >
-        {/* Image sequence canvas */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 1, opacity: 1 }}
-        />
+        <div ref={heroVisualsRef} className="absolute inset-0">
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full"
+            style={{ zIndex: 1 }}
+          />
 
-        {/* Particles — ember drift; dissolved before Fire chapter */}
-        <canvas
-          ref={particlesCanvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ zIndex: 2, opacity: 1 }}
-        />
+          <canvas
+            ref={particlesCanvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 2 }}
+          />
 
-        {/* Radial vignette */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            zIndex: 3,
-            background:
-              "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.88) 100%)",
-          }}
-        />
-
-        {/* Cinematic letterbox bars */}
-        <div
-          className="absolute top-0 inset-x-0 pointer-events-none"
-          style={{
-            zIndex: 4,
-            height: "clamp(28px, 5vw, 56px)",
-            background: "linear-gradient(to bottom, #000 60%, transparent)",
-          }}
-        />
-        <div
-          className="absolute bottom-0 inset-x-0 pointer-events-none"
-          style={{
-            zIndex: 4,
-            height: "clamp(28px, 5vw, 56px)",
-            background: "linear-gradient(to top, #000 60%, transparent)",
-          }}
-        />
-
-        {/* ── Typography overlay ── */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-          style={{ zIndex: 5 }}
-        >
-          {/* Decorative label above headline */}
-          <span
-            ref={taglineRef}
-            className="block mb-5 text-[9px] md:text-[10px] tracking-[0.55em] uppercase text-amber-400"
-            style={{ fontFamily: "var(--font-cinematic, serif)", opacity: 0 }}
-          >
-            A Cinematic Experience
-          </span>
-
-          {/* Thin gold line */}
           <div
-            ref={lineRef}
-            className="mb-7"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              width: "clamp(40px, 5vw, 72px)",
-              height: "1px",
+              zIndex: 3,
               background:
-                "linear-gradient(to right, transparent, rgba(251,191,36,0.7), transparent)",
-              opacity: 0,
+                "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 35%, rgba(0,0,0,0.55) 70%, rgba(0,0,0,0.88) 100%)",
             }}
           />
 
-          {/* Main headline */}
-          <h1
-            ref={headlineRef}
-            className="text-center leading-none tracking-wide text-white"
+          <div
+            className="absolute top-0 inset-x-0 pointer-events-none"
             style={{
-              fontFamily: "var(--font-cinematic, serif)",
-              fontSize: "clamp(2.8rem, 8vw, 7rem)",
-              fontWeight: 300,
-              letterSpacing: "0.06em",
-              opacity: 0,
-              textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+              zIndex: 4,
+              height: "clamp(28px, 5vw, 56px)",
+              background: "linear-gradient(to bottom, #000 60%, transparent)",
             }}
-          >
-            Crafted with Fire
-          </h1>
-
-          {/* Subtitle */}
-          <p
-            ref={subtitleRef}
-            className="mt-5 text-center font-light"
+          />
+          <div
+            className="absolute bottom-0 inset-x-0 pointer-events-none"
             style={{
-              fontFamily: "var(--font-cinematic, serif)",
-              fontSize: "clamp(0.65rem, 1.5vw, 0.95rem)",
-              letterSpacing: "0.45em",
-              textTransform: "uppercase",
-              color: "rgba(253,230,138,0.8)",
-              opacity: 0,
+              zIndex: 4,
+              height: "clamp(28px, 5vw, 56px)",
+              background: "linear-gradient(to top, #000 60%, transparent)",
             }}
-          >
-            An immersive food experience
-          </p>
-        </div>
+          />
 
-        {/* Scroll hint */}
-        <div
-          ref={scrollHintRef}
-          className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-3 pointer-events-none"
-          style={{ zIndex: 5, opacity: 0 }}
-        >
-          <span
-            className="text-[9px] tracking-[0.45em] uppercase"
-            style={{ color: "rgba(255,255,255,0.3)" }}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+            style={{ zIndex: 5 }}
           >
-            Scroll
-          </span>
-          <div className="flex flex-col items-center gap-[3px]">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 1,
-                  height: 5,
-                  borderRadius: 1,
-                  background: `rgba(251,191,36,${0.5 - i * 0.14})`,
-                }}
-              />
-            ))}
+            <div
+              ref={lineRef}
+              className="mb-7"
+              style={{
+                width: "clamp(40px, 5vw, 72px)",
+                height: "1px",
+                background:
+                  "linear-gradient(to right, transparent, rgba(251,191,36,0.7), transparent)",
+                opacity: 0,
+              }}
+            />
+
+            <h1
+              ref={headlineRef}
+              className="text-center leading-none tracking-wide text-white"
+              style={{
+                fontFamily: "var(--font-cinematic, serif)",
+                fontSize: "clamp(2.8rem, 8vw, 7rem)",
+                fontWeight: 300,
+                letterSpacing: "0.06em",
+                opacity: 0,
+                textShadow: "0 4px 40px rgba(0,0,0,0.6)",
+              }}
+            >
+              Crafted with Fire
+            </h1>
+          </div>
+
+          <div
+            ref={scrollHintRef}
+            className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-3 pointer-events-none"
+            style={{ zIndex: 5, opacity: 0 }}
+          >
+            <span
+              className="text-[9px] tracking-[0.45em] uppercase"
+              style={{ color: "rgba(255,255,255,0.3)" }}
+            >
+              Scroll
+            </span>
+            <div className="flex flex-col items-center gap-[3px]">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 1,
+                    height: 5,
+                    borderRadius: 1,
+                    background: `rgba(251,191,36,${0.5 - i * 0.14})`,
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </section>
-
     </>
   );
 }
