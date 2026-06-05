@@ -5,11 +5,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const TOTAL_FRAMES = 121;
-/**
- * Last frame index for the pure rotation beat (0-based).
- * Frames beyond ~45% of the sequence show cheese stretch, basil, tomato disassembly.
- */
-const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.45);
+/** Last 0-based index for pure whole-pizza rotation (ezgif-frame-025.png). Frame 026+ is ingredient imagery. */
+const ROTATION_END_FRAME = 24;
 
 function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
