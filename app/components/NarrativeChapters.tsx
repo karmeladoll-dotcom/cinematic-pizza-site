@@ -29,6 +29,7 @@ export default function FireChapterSection() {
       pinScrollPerSlide={780}
       mobilePinScrollPerSlide={460}
       blendOutSrc={VIDEOS.tomato}
+      overlapPrevVh={12}
     />
   );
 }

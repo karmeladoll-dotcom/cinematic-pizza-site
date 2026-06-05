@@ -5,6 +5,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 const TOTAL_FRAMES = 121;
+/** Last frame index for the rotation beat — excludes ingredient-disassembly tail */
+const ROTATION_END_FRAME = Math.round((TOTAL_FRAMES - 1) * 0.86);
 
 function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
@@ -158,25 +160,28 @@ export default function CinematicScene() {
       gsap.set(lineRef.current, { scaleX: 0, transformOrigin: "left center" });
 
       const frameObj = { frame: 0 };
+      /* Pizza rotation completes when typography exits — no tail frames or particle limbo */
+      const ROTATION_END = 7.8;
+      const PIN_SCROLL = 4400;
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=5500",
+          end: `+=${PIN_SCROLL}`,
           pin: true,
           scrub: 0.6,
           anticipatePin: 1,
         },
       });
 
-      // Frame sequence — runs across the full timeline
+      // Frame sequence — ends with rotation, not ingredient tail frames
       tl.to(
         frameObj,
         {
-          frame: TOTAL_FRAMES - 1,
+          frame: ROTATION_END_FRAME,
           ease: "none",
-          duration: 10,
+          duration: ROTATION_END,
           onUpdate() {
             const idx = Math.min(
               Math.round(frameObj.frame),
@@ -219,7 +224,7 @@ export default function CinematicScene() {
         1.1
       );
 
-      // --- hold for a while, then everything exits ---
+      // --- typography exits, hero visual layers dissolve for Fire handoff ---
       tl.to(
         [
           headlineRef.current,
@@ -234,7 +239,30 @@ export default function CinematicScene() {
           ease: "power2.in",
           stagger: 0.06,
         },
-        7.8
+        ROTATION_END - 0.9
+      );
+
+      tl.to(
+        scrollHintRef.current,
+        { autoAlpha: 0, duration: 0.5, ease: "power2.in" },
+        ROTATION_END - 0.7
+      );
+
+      tl.to(
+        particlesCanvas,
+        {
+          autoAlpha: 0,
+          duration: 0.65,
+          ease: "power2.inOut",
+          onComplete: () => cancelAnimationFrame(rafId),
+        },
+        ROTATION_END - 0.5
+      );
+
+      tl.to(
+        canvas,
+        { autoAlpha: 0, duration: 0.75, ease: "power2.inOut" },
+        ROTATION_END - 0.35
       );
 
       // [PIZZA-SCROLL-HOOK] Future: at this position in the timeline the hero
@@ -356,14 +384,14 @@ export default function CinematicScene() {
         <canvas
           ref={canvasRef}
           className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 1 }}
+          style={{ zIndex: 1, opacity: 1 }}
         />
 
-        {/* Particles */}
+        {/* Particles — ember drift; dissolved before Fire chapter */}
         <canvas
           ref={particlesCanvasRef}
           className="absolute inset-0 w-full h-full pointer-events-none"
-          style={{ zIndex: 2 }}
+          style={{ zIndex: 2, opacity: 1 }}
         />
 
         {/* Radial vignette */}
