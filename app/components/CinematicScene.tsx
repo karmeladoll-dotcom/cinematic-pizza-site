@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -24,6 +24,7 @@ interface Particle {
 }
 
 export default function CinematicScene() {
+  const [heroRetired, setHeroRetired] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const heroVisualsRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,6 +49,7 @@ export default function CinematicScene() {
     let currentFrame = 0;
     let rafId = 0;
     let heroDismissed = false;
+    let heroTimeline: gsap.core.Timeline | undefined;
 
     function setupCanvas() {
       canvas.width = window.innerWidth;
@@ -59,52 +61,22 @@ export default function CinematicScene() {
     function dismissHero() {
       if (heroDismissed) return;
       heroDismissed = true;
-      currentFrame = ROTATION_END_FRAME;
 
       cancelAnimationFrame(rafId);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
 
-      gsap.set([canvas, particlesCanvas, heroVisualsRef.current], {
-        autoAlpha: 0,
-        visibility: "hidden",
-        display: "none",
-      });
+      heroTimeline?.scrollTrigger?.kill(true);
+      heroTimeline?.kill();
+      heroTimeline = undefined;
 
       gsap.set(section, {
-        height: 0,
-        minHeight: 0,
-        margin: 0,
-        padding: 0,
-        overflow: "hidden",
-        pointerEvents: "none",
+        clearProps: "transform,top,left,width,maxWidth,maxHeight,position",
       });
 
+      setHeroRetired(true);
       ScrollTrigger.refresh();
-    }
-
-    function restoreHeroIfAtTop() {
-      if (!heroDismissed || window.scrollY > 80) return;
-
-      heroDismissed = false;
-
-      gsap.set(section, {
-        height: "100vh",
-        minHeight: "",
-        margin: "",
-        padding: "",
-        overflow: "hidden",
-        pointerEvents: "",
-      });
-
-      gsap.set([canvas, particlesCanvas, heroVisualsRef.current], {
-        display: "block",
-        visibility: "visible",
-      });
-
-      animateParticles();
-      drawFrame(currentFrame);
     }
 
     function drawFrame(index: number) {
@@ -206,7 +178,7 @@ export default function CinematicScene() {
         }
       }
 
-      const tl = gsap.timeline({
+      heroTimeline = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: "top top",
@@ -214,14 +186,11 @@ export default function CinematicScene() {
           pin: true,
           scrub: 0.55,
           anticipatePin: 1,
-          onLeave: () => {
-            dismissHero();
-          },
-          onEnterBack: () => {
-            restoreHeroIfAtTop();
-          },
+          onLeave: dismissHero,
         },
       });
+
+      const tl = heroTimeline;
 
       tl.to(
         frameObj,
@@ -299,6 +268,9 @@ export default function CinematicScene() {
 
       tl.call(lockRotationFrame, undefined, exitStart);
 
+      const timelineEnd = exitStart + FADE_OUT + 0.15;
+      tl.call(dismissHero, undefined, timelineEnd);
+
       gsap.to(loadingRef.current, {
         autoAlpha: 0,
         duration: 1.4,
@@ -358,7 +330,8 @@ export default function CinematicScene() {
     return () => {
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(rafId);
-      ScrollTrigger.getAll().forEach((t) => t.kill());
+      heroTimeline?.scrollTrigger?.kill(true);
+      heroTimeline?.kill();
     };
   }, []);
 
@@ -402,8 +375,17 @@ export default function CinematicScene() {
         ref={sectionRef}
         data-pizza-section="hero"
         className="relative w-full bg-black overflow-hidden"
-        style={{ height: "100vh" }}
+        aria-hidden={heroRetired}
+        style={{
+          height: heroRetired ? 0 : "100vh",
+          minHeight: heroRetired ? 0 : undefined,
+          margin: 0,
+          padding: 0,
+          overflow: "hidden",
+          pointerEvents: heroRetired ? "none" : undefined,
+        }}
       >
+        {!heroRetired && (
         <div ref={heroVisualsRef} className="absolute inset-0">
           <canvas
             ref={canvasRef}
@@ -501,6 +483,7 @@ export default function CinematicScene() {
             </div>
           </div>
         </div>
+        )}
       </section>
     </>
   );
