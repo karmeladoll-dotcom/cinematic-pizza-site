@@ -28,6 +28,7 @@ export default function FireChapterSection() {
       slides={FIRE_SLIDES}
       pinScrollPerSlide={780}
       mobilePinScrollPerSlide={460}
+      blendOutSrc={VIDEOS.tomato}
     />
   );
 }
@@ -42,6 +43,8 @@ export function SourceChapterSection() {
       slides={SOURCE_SLIDES}
       pinScrollPerSlide={820}
       mobilePinScrollPerSlide={480}
+      blendOutSrc={VIDEOS.doughWork}
+      overlapPrevVh={10}
     />
   );
 }
@@ -54,6 +57,8 @@ export function CraftChapterSection() {
       title="The Craft"
       chapterLabel="CHAPTER III — The Craft"
       slides={CRAFT_SLIDES}
+      blendOutSrc={VIDEOS.cut}
+      overlapPrevVh={14}
     />
   );
 }
@@ -66,6 +71,7 @@ export function ResultChapterSection() {
       title="The Result"
       chapterLabel="CHAPTER IV — The Result"
       slides={RESULT_SLIDES}
+      overlapPrevVh={14}
     />
   );
 }

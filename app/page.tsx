@@ -27,7 +27,7 @@ export default function Home() {
     <>
       <GrainOverlay />
       <Navbar />
-      <main>
+      <main style={{ margin: 0, padding: 0, background: "#000" }}>
         <CinematicScene />
         <FireChapterSection />
         <SourceChapterSection />

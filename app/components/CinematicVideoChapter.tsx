@@ -17,21 +17,31 @@ interface CinematicVideoChapterProps {
   slides: VideoSlide[];
   pinScrollPerSlide?: number;
   mobilePinScrollPerSlide?: number;
-  lazyLoad?: boolean;
-  fadeTitleOnScroll?: boolean;
+  /** Last frame of previous chapter — crossfades into first slide on entry */
+  blendInSrc?: string;
+  /** First frame of next chapter — crossfades from last slide on exit */
+  blendOutSrc?: string;
+  /** Pull section up to overlap previous chapter's exit frame */
+  overlapPrevVh?: number;
 }
 
-function getPinPerSlide(
-  desktop: number,
-  mobile?: number
-): number {
+function getPinPerSlide(desktop: number, mobile?: number): number {
   if (typeof window === "undefined") return desktop;
   const isMobile = window.matchMedia("(max-width: 767px)").matches;
   return isMobile ? (mobile ?? Math.round(desktop * 0.58)) : desktop;
 }
 
+function primeVideo(video: HTMLVideoElement | null) {
+  if (!video) return;
+  const src = video.dataset.src;
+  if (src && !video.src) video.src = src;
+  video.load();
+  video.play().catch(() => {});
+}
+
 /**
  * Pinned scroll chapter — full-bleed videos crossfade on scroll.
+ * blendIn/blendOut keep continuity with adjacent chapters (no black gaps).
  */
 export default function CinematicVideoChapter({
   id,
@@ -41,8 +51,9 @@ export default function CinematicVideoChapter({
   slides,
   pinScrollPerSlide = 750,
   mobilePinScrollPerSlide,
-  lazyLoad = true,
-  fadeTitleOnScroll = true,
+  blendInSrc,
+  blendOutSrc,
+  overlapPrevVh = 0,
 }: CinematicVideoChapterProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -50,6 +61,10 @@ export default function CinematicVideoChapter({
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const labelRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const blendInRef = useRef<HTMLDivElement>(null);
+  const blendOutRef = useRef<HTMLDivElement>(null);
+  const blendInVideoRef = useRef<HTMLVideoElement>(null);
+  const blendOutVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -60,37 +75,34 @@ export default function CinematicVideoChapter({
     const pinPerSlide = getPinPerSlide(pinScrollPerSlide, mobilePinScrollPerSlide);
     const pinScroll = pinPerSlide * slides.length;
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    const needsEntryBlend = blendInSrc && blendInSrc !== slides[0]?.src;
 
-    if (lazyLoad) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (!entry.isIntersecting) return;
-            videoRefs.current.forEach((video, i) => {
-              if (!video || video.src) return;
-              const src = video.dataset.src;
-              if (src) {
-                video.src = src;
-                if (i > 0) video.load();
-              }
-            });
-            observer.disconnect();
-          });
-        },
-        { rootMargin: "320px 0px" }
-      );
-      observer.observe(section);
-    }
+    /* Preload every clip in this chapter + handoff sources */
+    videoRefs.current.forEach((video) => primeVideo(video));
+    primeVideo(blendInVideoRef.current);
+    primeVideo(blendOutVideoRef.current);
 
     const ctx = gsap.context(() => {
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        gsap.set(slide, { autoAlpha: i === 0 ? 1 : 0 });
+        gsap.set(slide, { autoAlpha: i === 0 && !needsEntryBlend ? 1 : 0 });
       });
       labelRefs.current.forEach((label, i) => {
         if (!label) return;
         gsap.set(label, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 10 });
       });
+
+      if (needsEntryBlend && blendInRef.current) {
+        gsap.set(blendInRef.current, { autoAlpha: 1 });
+      } else if (blendInRef.current) {
+        gsap.set(blendInRef.current, { autoAlpha: 0 });
+      }
+
+      if (blendOutRef.current) {
+        gsap.set(blendOutRef.current, { autoAlpha: 0 });
+      }
+
+      gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -103,29 +115,38 @@ export default function CinematicVideoChapter({
         },
       });
 
+      /* Entry crossfade — incoming footage visible before titles */
+      if (needsEntryBlend) {
+        tl.to(blendInRef.current, { autoAlpha: 0, duration: 0.28 }, 0);
+        tl.to(slideRefs.current[0], { autoAlpha: 1, duration: 0.28 }, 0);
+        tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      } else {
+        tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      }
+
+      /* Titles fade in over moving footage */
       tl.fromTo(
         chapterRef.current,
-        { autoAlpha: 0, x: -12 },
-        { autoAlpha: 1, x: 0, duration: 0.4, ease: "power2.out" },
-        0
+        { autoAlpha: 0, x: -10 },
+        { autoAlpha: 1, x: 0, duration: 0.45, ease: "power2.out" },
+        needsEntryBlend ? 0.18 : 0.08
       );
 
       tl.fromTo(
         titleRef.current,
-        { autoAlpha: 0, y: 14 },
-        { autoAlpha: 1, y: 0, duration: 0.55, ease: "power2.out" },
-        0.05
+        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out" },
+        needsEntryBlend ? 0.24 : 0.12
       );
 
-      if (fadeTitleOnScroll) {
-        tl.to(titleRef.current, { autoAlpha: 0.18, duration: 0.35 }, 0.45);
-      }
+      tl.to(titleRef.current, { autoAlpha: 0.16, duration: 0.35 }, needsEntryBlend ? 0.62 : 0.5);
 
-      const hold = isMobile ? 0.22 : 0.3;
+      const hold = isMobile ? 0.22 : 0.28;
       const fade = isMobile ? 0.18 : 0.22;
+      const entryOffset = needsEntryBlend ? 0.28 : 0;
 
       for (let i = 0; i < slides.length - 1; i++) {
-        const t = i + hold;
+        const t = entryOffset + i + hold;
 
         tl.to(slideRefs.current[i], { autoAlpha: 0, duration: fade }, t);
         tl.to(slideRefs.current[i + 1], { autoAlpha: 1, duration: fade }, t);
@@ -145,18 +166,28 @@ export default function CinematicVideoChapter({
         tl.call(
           () => {
             videoRefs.current[i]?.pause();
-            const next = videoRefs.current[i + 1];
-            if (next) {
-              if (!next.src && next.dataset.src) next.src = next.dataset.src;
-              next.play().catch(() => {});
-            }
+            primeVideo(videoRefs.current[i + 1]);
           },
           undefined,
           t
         );
       }
 
-      tl.to({}, { duration: hold * 0.5 });
+      /* Exit crossfade into next chapter */
+      if (blendOutSrc && blendOutRef.current) {
+        const lastIdx = slides.length - 1;
+        const exitStart =
+          entryOffset + Math.max(0, slides.length - 1) * (hold + fade * 0.5) + hold * 0.4;
+
+        tl.to(slideRefs.current[lastIdx], { autoAlpha: 0, duration: 0.32 }, exitStart);
+        tl.fromTo(
+          blendOutRef.current,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: 0.32 },
+          exitStart
+        );
+        tl.call(() => primeVideo(blendOutVideoRef.current), undefined, exitStart);
+      }
     }, sectionRef);
 
     const onResize = () => ScrollTrigger.refresh();
@@ -166,7 +197,13 @@ export default function CinematicVideoChapter({
       window.removeEventListener("resize", onResize);
       ctx.revert();
     };
-  }, [slides.length, pinScrollPerSlide, mobilePinScrollPerSlide, lazyLoad, fadeTitleOnScroll]);
+  }, [
+    slides.length,
+    pinScrollPerSlide,
+    mobilePinScrollPerSlide,
+    blendInSrc,
+    blendOutSrc,
+  ]);
 
   const hasLabels = slides.some((s) => s.label);
 
@@ -177,10 +214,11 @@ export default function CinematicVideoChapter({
       ref={sectionRef}
       style={{
         position: "relative",
-        background: "#000",
         height: "100vh",
         overflow: "hidden",
-        marginTop: -1,
+        margin: 0,
+        padding: 0,
+        marginTop: overlapPrevVh ? `-${overlapPrevVh}vh` : 0,
       }}
     >
       {slides.map((slide, i) => (
@@ -189,19 +227,19 @@ export default function CinematicVideoChapter({
           ref={(el) => {
             slideRefs.current[i] = el;
           }}
-          style={{ position: "absolute", inset: 0, zIndex: 0 }}
+          style={{ position: "absolute", inset: 0, zIndex: 1 }}
         >
           <video
             ref={(el) => {
               videoRefs.current[i] = el;
             }}
-            src={!lazyLoad || i === 0 ? slide.src : undefined}
+            src={slide.src}
             data-src={slide.src}
             autoPlay
             muted
             loop
             playsInline
-            preload={!lazyLoad || i === 0 ? "auto" : "none"}
+            preload="auto"
             style={{
               position: "absolute",
               inset: 0,
@@ -213,6 +251,56 @@ export default function CinematicVideoChapter({
         </div>
       ))}
 
+      {blendInSrc && blendInSrc !== slides[0]?.src && (
+        <div
+          ref={blendInRef}
+          style={{ position: "absolute", inset: 0, zIndex: 2, opacity: 0 }}
+        >
+          <video
+            ref={blendInVideoRef}
+            src={blendInSrc}
+            data-src={blendInSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      )}
+
+      {blendOutSrc && (
+        <div
+          ref={blendOutRef}
+          style={{ position: "absolute", inset: 0, zIndex: 3, opacity: 0 }}
+        >
+          <video
+            ref={blendOutVideoRef}
+            src={blendOutSrc}
+            data-src={blendOutSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      )}
+
       <div
         aria-hidden="true"
         style={{
@@ -221,7 +309,7 @@ export default function CinematicVideoChapter({
           background:
             "linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.45) 100%)",
           pointerEvents: "none",
-          zIndex: 2,
+          zIndex: 4,
         }}
       />
 
