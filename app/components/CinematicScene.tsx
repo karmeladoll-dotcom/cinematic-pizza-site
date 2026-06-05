@@ -47,6 +47,7 @@ export default function CinematicScene() {
     const images: HTMLImageElement[] = [];
     let currentFrame = 0;
     let rafId = 0;
+    let heroDismissed = false;
 
     function setupCanvas() {
       canvas.width = window.innerWidth;
@@ -55,7 +56,60 @@ export default function CinematicScene() {
       particlesCanvas.height = window.innerHeight;
     }
 
+    function dismissHero() {
+      if (heroDismissed) return;
+      heroDismissed = true;
+      currentFrame = ROTATION_END_FRAME;
+
+      cancelAnimationFrame(rafId);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+
+      gsap.set([canvas, particlesCanvas, heroVisualsRef.current], {
+        autoAlpha: 0,
+        visibility: "hidden",
+        display: "none",
+      });
+
+      gsap.set(section, {
+        height: 0,
+        minHeight: 0,
+        margin: 0,
+        padding: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+      });
+
+      ScrollTrigger.refresh();
+    }
+
+    function restoreHeroIfAtTop() {
+      if (!heroDismissed || window.scrollY > 80) return;
+
+      heroDismissed = false;
+
+      gsap.set(section, {
+        height: "100vh",
+        minHeight: "",
+        margin: "",
+        padding: "",
+        overflow: "hidden",
+        pointerEvents: "",
+      });
+
+      gsap.set([canvas, particlesCanvas, heroVisualsRef.current], {
+        display: "block",
+        visibility: "visible",
+      });
+
+      animateParticles();
+      drawFrame(currentFrame);
+    }
+
     function drawFrame(index: number) {
+      if (heroDismissed) return;
+
       const idx = Math.min(Math.max(0, index), ROTATION_END_FRAME);
       const img = images[idx];
       if (!img?.complete || !img.naturalWidth) return;
@@ -107,6 +161,8 @@ export default function CinematicScene() {
     }));
 
     function animateParticles() {
+      if (heroDismissed) return;
+
       pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
       particles.forEach((p) => {
         p.x += p.vx;
@@ -142,12 +198,13 @@ export default function CinematicScene() {
       const FADE_OUT = 0.7;
       const PIN_SCROLL = 2200;
 
-      const lockRotationFrame = () => {
+      function lockRotationFrame() {
+        if (heroDismissed) return;
         if (currentFrame !== ROTATION_END_FRAME) {
           currentFrame = ROTATION_END_FRAME;
           drawFrame(currentFrame);
         }
-      };
+      }
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -158,17 +215,10 @@ export default function CinematicScene() {
           scrub: 0.55,
           anticipatePin: 1,
           onLeave: () => {
-            lockRotationFrame();
-            gsap.set(heroVisualsRef.current, {
-              autoAlpha: 0,
-              visibility: "hidden",
-            });
+            dismissHero();
           },
           onEnterBack: () => {
-            gsap.set(heroVisualsRef.current, {
-              autoAlpha: 1,
-              visibility: "visible",
-            });
+            restoreHeroIfAtTop();
           },
         },
       });
@@ -180,6 +230,7 @@ export default function CinematicScene() {
           ease: "none",
           duration: FRAME_PLAY,
           onUpdate() {
+            if (heroDismissed) return;
             const clamped = Math.min(Math.round(frameObj.frame), ROTATION_END_FRAME);
             if (clamped !== currentFrame) {
               currentFrame = clamped;
@@ -297,7 +348,9 @@ export default function CinematicScene() {
 
     const handleResize = () => {
       setupCanvas();
-      drawFrame(currentFrame);
+      if (!heroDismissed) {
+        drawFrame(currentFrame);
+      }
       ScrollTrigger.refresh();
     };
     window.addEventListener("resize", handleResize);
