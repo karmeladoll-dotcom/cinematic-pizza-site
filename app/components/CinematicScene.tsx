@@ -34,6 +34,8 @@ export default function CinematicScene() {
     let currentFrame = 0;
     let heroDismissed = false;
     let heroTimeline: gsap.core.Timeline | undefined;
+    let lastScrollY = 0;
+    let syncHeroVisibility: (() => void) | undefined;
 
     function setupCanvas() {
       canvas.width = window.innerWidth;
@@ -45,8 +47,15 @@ export default function CinematicScene() {
       heroDismissed = true;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       gsap.set([canvas, heroVisualsRef.current], { autoAlpha: 0 });
+    }
+
+    function restoreHero() {
+      if (!heroDismissed) return;
+      heroDismissed = false;
+
+      gsap.set([canvas, heroVisualsRef.current], { clearProps: "opacity,visibility" });
+      drawFrame(currentFrame);
     }
 
     function drawFrame(index: number) {
@@ -104,7 +113,9 @@ export default function CinematicScene() {
       const TITLE_IN_AT = 2.0;
       const TITLE_HOLD = 0.45;
       const FADE_OUT = 0.7;
-      const PIN_SCROLL = 2200;
+      /* Release pin before Born From Fire reaches viewport top (~100vh). */
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
+      const PIN_SCROLL = isMobile ? 450 : 700;
 
       function lockRotationFrame() {
         if (heroDismissed) return;
@@ -123,8 +134,32 @@ export default function CinematicScene() {
           scrub: 0.55,
           anticipatePin: 1,
           onLeave: dismissHero,
+          onEnterBack: restoreHero,
         },
       });
+
+      syncHeroVisibility = () => {
+        const scrollY = window.scrollY;
+        const dir = scrollY < lastScrollY ? -1 : 1;
+        lastScrollY = scrollY;
+
+        const rect = section.getBoundingClientRect();
+        const inView = rect.bottom > 0 && rect.top < window.innerHeight;
+        const pinEnd = heroTimeline?.scrollTrigger?.end ?? 0;
+
+        if (dir === -1 && inView) {
+          restoreHero();
+        } else if (dir === 1) {
+          if (!inView && rect.bottom <= 0) {
+            dismissHero();
+          } else if (scrollY > pinEnd && inView) {
+            dismissHero();
+          }
+        }
+      };
+
+      lastScrollY = window.scrollY;
+      window.addEventListener("scroll", syncHeroVisibility, { passive: true });
 
       const tl = heroTimeline;
 
@@ -144,7 +179,6 @@ export default function CinematicScene() {
           },
           onComplete() {
             lockRotationFrame();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
           },
         },
         0
@@ -204,9 +238,6 @@ export default function CinematicScene() {
         exitStart + FADE_OUT
       );
 
-      const timelineEnd = exitStart + FADE_OUT + 0.15;
-      tl.call(dismissHero, undefined, timelineEnd);
-
       gsap.to(loadingRef.current, {
         autoAlpha: 0,
         duration: 1.4,
@@ -265,6 +296,7 @@ export default function CinematicScene() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      if (syncHeroVisibility) window.removeEventListener("scroll", syncHeroVisibility);
       heroTimeline?.scrollTrigger?.kill(true);
       heroTimeline?.kill();
     };
