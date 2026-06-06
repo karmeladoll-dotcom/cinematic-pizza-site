@@ -196,7 +196,10 @@ export default function CinematicScene() {
               drawFrame(currentFrame);
             }
           },
-          onComplete: lockRotationFrame,
+          onComplete() {
+            lockRotationFrame();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          },
         },
         0
       );
