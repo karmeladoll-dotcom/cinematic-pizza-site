@@ -246,17 +246,26 @@ export default function CinematicScene() {
 
       tl.to(
         canvas,
-        { autoAlpha: 0, duration: FADE_OUT, ease: "power2.in" },
-        exitStart + 0.08
+        { autoAlpha: 0, duration: FADE_OUT * 0.85, ease: "power2.in" },
+        exitStart
       );
 
       tl.to(
         heroVisualsRef.current,
-        { autoAlpha: 0, duration: FADE_OUT * 0.6, ease: "power2.in" },
-        exitStart + FADE_OUT * 0.4
+        { autoAlpha: 0, duration: FADE_OUT * 0.85, ease: "power2.in" },
+        exitStart
       );
 
       tl.call(lockRotationFrame, undefined, exitStart);
+
+      tl.call(
+        () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+        },
+        undefined,
+        exitStart + FADE_OUT
+      );
 
       const timelineEnd = exitStart + FADE_OUT + 0.15;
       tl.call(dismissHero, undefined, timelineEnd);
