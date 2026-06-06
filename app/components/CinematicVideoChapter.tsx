@@ -80,6 +80,35 @@ export default function CinematicVideoChapter({
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
     };
 
+    const hideSlides = () => {
+      slideRefs.current.forEach((slide) => {
+        if (!slide) return;
+        gsap.set(slide, { autoAlpha: 0, visibility: "hidden" });
+      });
+      videoRefs.current.forEach((video) => video?.pause());
+    };
+
+    const restoreSlides = () => {
+      slideRefs.current.forEach((slide, i) => {
+        if (!slide) return;
+        gsap.set(slide, {
+          autoAlpha: slides.length > 0 && i === 0 ? 1 : 0,
+          visibility: "visible",
+        });
+      });
+      if (slides.length > 0) {
+        primeVideo(videoRefs.current[0]);
+      }
+    };
+
+    const sealChapterExit = () => {
+      hideTitles();
+      hideSlides();
+      gsap.set(section, {
+        clearProps: "transform,top,left,width,maxWidth,maxHeight",
+      });
+    };
+
     const ctx = gsap.context(() => {
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
@@ -100,8 +129,12 @@ export default function CinematicVideoChapter({
           pin: true,
           scrub: isMobile ? 0.4 : 0.55,
           anticipatePin: 1,
-          onLeave: hideTitles,
-          onEnterBack: hideTitles,
+          onLeave: sealChapterExit,
+          onLeaveBack: restoreSlides,
+          onEnterBack: () => {
+            hideTitles();
+            restoreSlides();
+          },
         },
       });
 
@@ -159,6 +192,18 @@ export default function CinematicVideoChapter({
           t
         );
       }
+
+      if (slides.length > 0) {
+        const activeSlides = slideRefs.current.filter(
+          (slide): slide is HTMLDivElement => slide !== null
+        );
+        tl.to(
+          activeSlides,
+          { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
+          ">-0.32"
+        );
+        tl.call(hideSlides, undefined, ">");
+      }
     }, sectionRef);
 
     const onResize = () => ScrollTrigger.refresh();
@@ -190,6 +235,8 @@ export default function CinematicVideoChapter({
         overflow: "hidden",
         margin: 0,
         padding: 0,
+        backgroundColor: "#000",
+        isolation: "isolate",
       }}
     >
       {slides.map((slide, i) => (
