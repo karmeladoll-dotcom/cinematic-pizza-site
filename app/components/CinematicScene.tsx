@@ -12,22 +12,10 @@ function frameSrc(n: number): string {
   return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
 }
 
-interface Particle {
-  x: number;
-  y: number;
-  r: number;
-  vx: number;
-  vy: number;
-  opacity: number;
-  pulse: number;
-  pulseSpeed: number;
-}
-
 export default function CinematicScene() {
   const sectionRef = useRef<HTMLElement>(null);
   const heroVisualsRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesCanvasRef = useRef<HTMLCanvasElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
@@ -41,32 +29,24 @@ export default function CinematicScene() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     const section = sectionRef.current!;
-    const particlesCanvas = particlesCanvasRef.current!;
-    const pCtx = particlesCanvas.getContext("2d")!;
 
     const images: HTMLImageElement[] = [];
     let currentFrame = 0;
-    let rafId = 0;
     let heroDismissed = false;
     let heroTimeline: gsap.core.Timeline | undefined;
 
     function setupCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      particlesCanvas.width = window.innerWidth;
-      particlesCanvas.height = window.innerHeight;
     }
 
     function dismissHero() {
       if (heroDismissed) return;
       heroDismissed = true;
 
-      cancelAnimationFrame(rafId);
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
 
-      gsap.set(heroVisualsRef.current, { autoAlpha: 0 });
+      gsap.set([canvas, heroVisualsRef.current], { autoAlpha: 0 });
     }
 
     function drawFrame(index: number) {
@@ -111,42 +91,8 @@ export default function CinematicScene() {
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
     }
 
-    const particles: Particle[] = Array.from({ length: 70 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.4 + 0.3,
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: -(Math.random() * 0.25 + 0.05),
-      opacity: Math.random() * 0.22 + 0.04,
-      pulse: Math.random() * Math.PI * 2,
-      pulseSpeed: Math.random() * 0.015 + 0.005,
-    }));
-
-    function animateParticles() {
-      if (heroDismissed) return;
-
-      pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.pulse += p.pulseSpeed;
-        const alpha = p.opacity * (0.6 + 0.4 * Math.sin(p.pulse));
-
-        if (p.x < 0) p.x = particlesCanvas.width;
-        if (p.x > particlesCanvas.width) p.x = 0;
-        if (p.y < 0) p.y = particlesCanvas.height;
-
-        pCtx.beginPath();
-        pCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        pCtx.fillStyle = `rgba(255, 185, 60, ${alpha})`;
-        pCtx.fill();
-      });
-      rafId = requestAnimationFrame(animateParticles);
-    }
-
     function initAnimations() {
       drawFrame(0);
-      animateParticles();
 
       gsap.set([headlineRef.current, lineRef.current], { autoAlpha: 0 });
       gsap.set(headlineRef.current, { y: 50 });
@@ -237,17 +183,6 @@ export default function CinematicScene() {
       );
 
       tl.to(
-        particlesCanvas,
-        {
-          autoAlpha: 0,
-          duration: FADE_OUT * 0.85,
-          ease: "power2.in",
-          onComplete: () => cancelAnimationFrame(rafId),
-        },
-        exitStart
-      );
-
-      tl.to(
         canvas,
         { autoAlpha: 0, duration: FADE_OUT * 0.85, ease: "power2.in" },
         exitStart
@@ -264,7 +199,6 @@ export default function CinematicScene() {
       tl.call(
         () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
         },
         undefined,
         exitStart + FADE_OUT
@@ -331,7 +265,6 @@ export default function CinematicScene() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      cancelAnimationFrame(rafId);
       heroTimeline?.scrollTrigger?.kill(true);
       heroTimeline?.kill();
     };
@@ -389,12 +322,6 @@ export default function CinematicScene() {
             ref={canvasRef}
             className="absolute inset-0 w-full h-full"
             style={{ zIndex: 1 }}
-          />
-
-          <canvas
-            ref={particlesCanvasRef}
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            style={{ zIndex: 2 }}
           />
 
           <div
