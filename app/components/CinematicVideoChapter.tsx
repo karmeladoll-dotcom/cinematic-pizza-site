@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -55,14 +55,12 @@ export default function CinematicVideoChapter({
   slideHold,
   slideFade,
 }: CinematicVideoChapterProps) {
-  const [chapterSealed, setChapterSealed] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const chapterRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const labelRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const chapterTimelineRef = useRef<gsap.core.Timeline | null>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -78,65 +76,24 @@ export default function CinematicVideoChapter({
 
     videoRefs.current.forEach((video) => primeVideo(video));
 
-    const hideTitles = () => {
+    const hideChapter = () => {
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
-    };
-
-    const hideSlides = () => {
       slideRefs.current.forEach((slide) => {
         if (!slide) return;
-        gsap.killTweensOf(slide);
-        gsap.set(slide, { autoAlpha: 0, visibility: "hidden", overwrite: true });
+        gsap.set(slide, { autoAlpha: 0 });
       });
-      videoRefs.current.forEach((video) => {
-        if (!video) return;
-        video.pause();
-        video.style.display = "none";
-      });
+      videoRefs.current.forEach((video) => video?.pause());
     };
 
-    const restoreSlides = () => {
+    const restoreChapter = () => {
+      gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        slide.style.removeProperty("display");
-        gsap.set(slide, {
-          autoAlpha: slides.length > 0 && i === 0 ? 1 : 0,
-          visibility: "visible",
-          overwrite: true,
-        });
-      });
-      videoRefs.current.forEach((video) => {
-        if (!video) return;
-        video.style.removeProperty("display");
+        gsap.set(slide, { autoAlpha: slides.length > 0 && i === 0 ? 1 : 0 });
       });
       if (slides.length > 0) {
         primeVideo(videoRefs.current[0]);
       }
-    };
-
-    const sealChapterExit = () => {
-      hideTitles();
-      hideSlides();
-
-      const tl = chapterTimelineRef.current;
-      tl?.scrollTrigger?.disable(false);
-
-      if (slides.length > 0) {
-        setChapterSealed(true);
-      }
-    };
-
-    const reopenChapter = () => {
-      if (slides.length > 0) {
-        setChapterSealed(false);
-      }
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          chapterTimelineRef.current?.scrollTrigger?.enable();
-          hideTitles();
-          restoreSlides();
-        });
-      });
     };
 
     const ctx = gsap.context(() => {
@@ -159,12 +116,10 @@ export default function CinematicVideoChapter({
           pin: true,
           scrub: isMobile ? 0.4 : 0.55,
           anticipatePin: 1,
-          onLeave: sealChapterExit,
-          onEnterBack: reopenChapter,
+          onLeave: hideChapter,
+          onEnterBack: restoreChapter,
         },
       });
-
-      chapterTimelineRef.current = tl;
 
       if (slides.length > 0) {
         tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
@@ -230,7 +185,7 @@ export default function CinematicVideoChapter({
           { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
           ">-0.32"
         );
-        tl.call(hideSlides, undefined, ">");
+        tl.call(hideChapter, undefined, ">");
       }
     }, sectionRef);
 
@@ -239,7 +194,6 @@ export default function CinematicVideoChapter({
 
     return () => {
       window.removeEventListener("resize", onResize);
-      chapterTimelineRef.current = null;
       ctx.revert();
     };
   }, [
@@ -268,36 +222,35 @@ export default function CinematicVideoChapter({
         isolation: "isolate",
       }}
     >
-      {!chapterSealed &&
-        slides.map((slide, i) => (
-          <div
-            key={slide.src}
+      {slides.map((slide, i) => (
+        <div
+          key={slide.src}
+          ref={(el) => {
+            slideRefs.current[i] = el;
+          }}
+          style={{ position: "absolute", inset: 0, zIndex: 1 }}
+        >
+          <video
             ref={(el) => {
-              slideRefs.current[i] = el;
+              videoRefs.current[i] = el;
             }}
-            style={{ position: "absolute", inset: 0, zIndex: 1 }}
-          >
-            <video
-              ref={(el) => {
-                videoRefs.current[i] = el;
-              }}
-              src={slide.src}
-              data-src={slide.src}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </div>
-        ))}
+            src={slide.src}
+            data-src={slide.src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      ))}
 
       <div
         aria-hidden="true"

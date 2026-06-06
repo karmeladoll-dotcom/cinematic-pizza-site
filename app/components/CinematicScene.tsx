@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -24,7 +24,6 @@ interface Particle {
 }
 
 export default function CinematicScene() {
-  const [heroRetired, setHeroRetired] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const heroVisualsRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,16 +66,7 @@ export default function CinematicScene() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       pCtx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
 
-      heroTimeline?.scrollTrigger?.kill(true);
-      heroTimeline?.kill();
-      heroTimeline = undefined;
-
-      gsap.set(section, {
-        clearProps: "transform,top,left,width,maxWidth,maxHeight,position",
-      });
-
-      setHeroRetired(true);
-      ScrollTrigger.refresh();
+      gsap.set(heroVisualsRef.current, { autoAlpha: 0 });
     }
 
     function drawFrame(index: number) {
@@ -375,17 +365,13 @@ export default function CinematicScene() {
         ref={sectionRef}
         data-pizza-section="hero"
         className="relative w-full bg-black overflow-hidden"
-        aria-hidden={heroRetired}
         style={{
-          height: heroRetired ? 0 : "100vh",
-          minHeight: heroRetired ? 0 : undefined,
+          height: "100vh",
           margin: 0,
           padding: 0,
           overflow: "hidden",
-          pointerEvents: heroRetired ? "none" : undefined,
         }}
       >
-        {!heroRetired && (
         <div ref={heroVisualsRef} className="absolute inset-0">
           <canvas
             ref={canvasRef}
@@ -483,7 +469,6 @@ export default function CinematicScene() {
             </div>
           </div>
         </div>
-        )}
       </section>
     </>
   );
