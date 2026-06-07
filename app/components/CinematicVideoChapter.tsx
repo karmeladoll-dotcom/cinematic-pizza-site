@@ -29,6 +29,8 @@ interface CinematicVideoChapterProps {
   slideHold?: number;
   /** Crossfade duration between slides */
   slideFade?: number;
+  /** Ingredient / slide label presentation */
+  labelVariant?: "caption" | "title";
 }
 
 function getPinPerSlide(desktop: number, mobile?: number): number {
@@ -63,6 +65,7 @@ export default function CinematicVideoChapter({
   titleHold = 0.3,
   slideHold,
   slideFade,
+  labelVariant = "caption",
 }: CinematicVideoChapterProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -85,12 +88,28 @@ export default function CinematicVideoChapter({
     const pinScroll = pinPerSlide * Math.max(slides.length, 1);
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const hold = slideHold ?? (isMobile ? 0.16 : 0.2);
-    const fade = slideFade ?? (isMobile ? 0.14 : 0.18);
+    const overlapFade = slideFade ?? (isMobile ? 0.28 : 0.38);
+    const labelLead = labelVariant === "title" ? 0.1 : overlapFade * 0.15;
+    const labelLag = labelVariant === "title" ? 0.1 : overlapFade * 0.15;
+    const primeLead = 0.06;
     const needsEntryBlend = blendInSrc && blendInSrc !== slides[0]?.src;
+    const hasOverlapEntry = overlapPrevVh > 0 && slides.length > 0 && !needsEntryBlend;
 
     videoRefs.current.forEach((video) => primeVideo(video));
     primeVideo(blendInVideoRef.current);
     primeVideo(blendOutVideoRef.current);
+
+    const earlyObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          videoRefs.current.forEach((v) => primeVideo(v));
+          earlyObserver.disconnect();
+        });
+      },
+      { rootMargin: "320px 0px", threshold: 0 }
+    );
+    earlyObserver.observe(section);
 
     const hideChapter = () => {
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
@@ -109,7 +128,10 @@ export default function CinematicVideoChapter({
       }
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        gsap.set(slide, { autoAlpha: slides.length > 0 && i === 0 && !needsEntryBlend ? 1 : 0 });
+        gsap.set(slide, {
+          autoAlpha:
+            slides.length > 0 && i === 0 && !needsEntryBlend && !hasOverlapEntry ? 1 : 0,
+        });
       });
       if (slides.length > 0) {
         primeVideo(videoRefs.current[0]);
@@ -119,11 +141,14 @@ export default function CinematicVideoChapter({
     const ctx = gsap.context(() => {
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        gsap.set(slide, { autoAlpha: i === 0 && !needsEntryBlend ? 1 : 0 });
+        gsap.set(slide, {
+          autoAlpha: i === 0 && !needsEntryBlend && !hasOverlapEntry ? 1 : 0,
+        });
       });
       labelRefs.current.forEach((label, i) => {
         if (!label) return;
-        gsap.set(label, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 8 });
+        const labelVisible = i === 0 && labelVariant !== "title";
+        gsap.set(label, { autoAlpha: labelVisible ? 1 : 0, y: labelVisible ? 0 : 12 });
       });
 
       if (needsEntryBlend && blendInRef.current) {
@@ -155,11 +180,24 @@ export default function CinematicVideoChapter({
         tl.to(blendInRef.current, { autoAlpha: 0, duration: 0.28 }, 0);
         tl.to(slideRefs.current[0], { autoAlpha: 1, duration: 0.28 }, 0);
         tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      } else if (hasOverlapEntry) {
+        gsap.set(slideRefs.current[0], { autoAlpha: 0 });
+        tl.to(slideRefs.current[0], { autoAlpha: 1, duration: 0.28, ease: "power2.out" }, 0);
+        tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
       } else if (slides.length > 0) {
         tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
       }
 
-      const titleIn = needsEntryBlend ? 0.18 : 0.06;
+      if (labelVariant === "title" && labelRefs.current[0]) {
+        tl.fromTo(
+          labelRefs.current[0],
+          { autoAlpha: 0, y: 12 },
+          { autoAlpha: 1, y: 0, duration: 0.22, ease: "power2.out" },
+          0.2
+        );
+      }
+
+      const titleIn = needsEntryBlend ? 0.18 : hasOverlapEntry ? 0.12 : 0.06;
       tl.fromTo(
         chapterRef.current,
         { autoAlpha: 0, x: -8 },
@@ -184,37 +222,55 @@ export default function CinematicVideoChapter({
       const slidesStart = titleOut + 0.35;
 
       for (let i = 0; i < slides.length - 1; i++) {
-        const t = slidesStart + entryOffset + i * (hold + fade);
+        const t = slidesStart + entryOffset + i * (hold + overlapFade);
 
-        tl.to(slideRefs.current[i], { autoAlpha: 0, duration: fade }, t);
-        tl.to(slideRefs.current[i + 1], { autoAlpha: 1, duration: fade }, t);
+        tl.call(() => primeVideo(videoRefs.current[i + 1]), undefined, t - primeLead);
+        tl.to(
+          slideRefs.current[i],
+          { autoAlpha: 0, duration: overlapFade, ease: "power1.inOut" },
+          t
+        );
+        tl.to(
+          slideRefs.current[i + 1],
+          { autoAlpha: 1, duration: overlapFade, ease: "power1.inOut" },
+          t
+        );
+        tl.call(() => videoRefs.current[i]?.pause(), undefined, t + overlapFade);
 
         if (labelRefs.current[i]) {
-          tl.to(labelRefs.current[i], { autoAlpha: 0, y: -4, duration: fade * 0.7 }, t);
+          tl.to(
+            labelRefs.current[i],
+            {
+              autoAlpha: 0,
+              y: labelVariant === "title" ? -8 : -4,
+              duration: labelVariant === "title" ? 0.18 : overlapFade * 0.7,
+              ease: "power2.in",
+            },
+            t - labelLead
+          );
         }
         if (labelRefs.current[i + 1]) {
           tl.fromTo(
             labelRefs.current[i + 1],
-            { autoAlpha: 0, y: 8 },
-            { autoAlpha: 1, y: 0, duration: fade * 0.85, ease: "power2.out" },
-            t + fade * 0.15
+            { autoAlpha: 0, y: labelVariant === "title" ? 12 : 8 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: labelVariant === "title" ? 0.22 : overlapFade * 0.85,
+              ease: "power2.out",
+            },
+            t + labelLag
           );
         }
-
-        tl.call(
-          () => {
-            videoRefs.current[i]?.pause();
-            primeVideo(videoRefs.current[i + 1]);
-          },
-          undefined,
-          t
-        );
       }
 
       if (blendOutSrc && blendOutRef.current && slides.length > 0) {
         const lastIdx = slides.length - 1;
         const exitStart =
-          slidesStart + entryOffset + Math.max(0, slides.length - 1) * (hold + fade) + hold * 0.4;
+          slidesStart +
+          entryOffset +
+          Math.max(0, slides.length - 1) * (hold + overlapFade) +
+          hold * 0.4;
 
         tl.to(slideRefs.current[lastIdx], { autoAlpha: 0, duration: 0.32 }, exitStart);
         tl.fromTo(
@@ -241,6 +297,7 @@ export default function CinematicVideoChapter({
     window.addEventListener("resize", onResize, { passive: true });
 
     return () => {
+      earlyObserver.disconnect();
       window.removeEventListener("resize", onResize);
       ctx.revert();
     };
@@ -250,9 +307,11 @@ export default function CinematicVideoChapter({
     mobilePinScrollPerSlide,
     blendInSrc,
     blendOutSrc,
+    overlapPrevVh,
     titleHold,
     slideHold,
     slideFade,
+    labelVariant,
   ]);
 
   const hasLabels = slides.some((s) => s.label);
@@ -279,7 +338,7 @@ export default function CinematicVideoChapter({
           ref={(el) => {
             slideRefs.current[i] = el;
           }}
-          style={{ position: "absolute", inset: 0, zIndex: 1 }}
+          style={{ position: "absolute", inset: 0, zIndex: i + 1 }}
         >
           <video
             ref={(el) => {
@@ -418,10 +477,21 @@ export default function CinematicVideoChapter({
         <div
           style={{
             position: "absolute",
-            bottom: "clamp(2rem, 5vw, 4rem)",
-            left: "clamp(1.5rem, 5vw, 5rem)",
+            ...(labelVariant === "title"
+              ? {
+                  bottom: "clamp(16vh, 20vh, 24vh)",
+                  left: "50%",
+                  transform: "translateX(-50%)",
+                  width: "min(92vw, 56rem)",
+                  textAlign: "center",
+                }
+              : {
+                  bottom: "clamp(2rem, 5vw, 4rem)",
+                  left: "clamp(1.5rem, 5vw, 5rem)",
+                }),
             zIndex: 6,
-            minHeight: "1.5rem",
+            minHeight: labelVariant === "title" ? "3rem" : "1.5rem",
+            pointerEvents: "none",
           }}
         >
           {slides.map((slide, i) =>
@@ -434,14 +504,25 @@ export default function CinematicVideoChapter({
                 style={{
                   position: i === 0 ? "relative" : "absolute",
                   top: 0,
-                  left: 0,
+                  left: labelVariant === "title" ? "50%" : 0,
+                  transform: labelVariant === "title" ? "translateX(-50%)" : undefined,
+                  width: labelVariant === "title" ? "100%" : undefined,
                   margin: 0,
                   fontFamily: "var(--font-cinematic, serif)",
-                  fontSize: "clamp(0.55rem, 1vw, 0.72rem)",
-                  letterSpacing: "0.38em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.74)",
-                  opacity: i === 0 ? 1 : 0,
+                  fontSize:
+                    labelVariant === "title"
+                      ? "clamp(2rem, 4vw, 3.5rem)"
+                      : "clamp(0.55rem, 1vw, 0.72rem)",
+                  fontWeight: labelVariant === "title" ? 300 : undefined,
+                  letterSpacing: labelVariant === "title" ? "0.08em" : "0.38em",
+                  textTransform: labelVariant === "title" ? "none" : "uppercase",
+                  color:
+                    labelVariant === "title"
+                      ? "rgba(255,255,255,0.88)"
+                      : "rgba(255,255,255,0.74)",
+                  textShadow:
+                    labelVariant === "title" ? "0 4px 40px rgba(0,0,0,0.65)" : undefined,
+                  opacity: i === 0 && labelVariant !== "title" ? 1 : 0,
                 }}
               >
                 {slide.label}

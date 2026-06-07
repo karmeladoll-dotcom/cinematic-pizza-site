@@ -40,6 +40,8 @@ export function SourceChapterSection() {
       mobilePinScrollPerSlide={280}
       titleHold={0.22}
       overlapPrevVh={10}
+      slideFade={0.38}
+      labelVariant="title"
     />
   );
 }
