@@ -17,7 +17,9 @@ interface CinematicVideoChapterProps {
   slides: VideoSlide[];
   pinScrollPerSlide?: number;
   mobilePinScrollPerSlide?: number;
-  /** Last frame of previous chapter — crossfades into first slide on entry */
+  /** Last frame of previous chapter — crossfades into first slide when src differs.
+   *  When equal to slides[0].src, declares continuity from the prior chapter's blendOutSrc
+   *  and suppresses the overlap entry fade on slide 0. */
   blendInSrc?: string;
   /** First frame of next chapter — crossfades from last slide on exit */
   blendOutSrc?: string;
@@ -93,7 +95,11 @@ export default function CinematicVideoChapter({
     const labelLag = labelVariant === "title" ? 0.1 : overlapFade * 0.15;
     const primeLead = 0.06;
     const needsEntryBlend = blendInSrc && blendInSrc !== slides[0]?.src;
-    const hasOverlapEntry = overlapPrevVh > 0 && slides.length > 0 && !needsEntryBlend;
+    /** Prior chapter blendOut hands off the same clip — keep slide 0 visible, no re-fade. */
+    const continuousFromPrev = Boolean(blendInSrc && blendInSrc === slides[0]?.src);
+    const hasOverlapEntry =
+      overlapPrevVh > 0 && slides.length > 0 && !needsEntryBlend && !continuousFromPrev;
+    const slide0Visible = !needsEntryBlend && !hasOverlapEntry;
 
     videoRefs.current.forEach((video) => primeVideo(video));
     primeVideo(blendInVideoRef.current);
@@ -129,8 +135,7 @@ export default function CinematicVideoChapter({
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
         gsap.set(slide, {
-          autoAlpha:
-            slides.length > 0 && i === 0 && !needsEntryBlend && !hasOverlapEntry ? 1 : 0,
+          autoAlpha: slides.length > 0 && i === 0 && slide0Visible ? 1 : 0,
         });
       });
       if (slides.length > 0) {
@@ -142,7 +147,7 @@ export default function CinematicVideoChapter({
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
         gsap.set(slide, {
-          autoAlpha: i === 0 && !needsEntryBlend && !hasOverlapEntry ? 1 : 0,
+          autoAlpha: i === 0 && slide0Visible ? 1 : 0,
         });
       });
       labelRefs.current.forEach((label, i) => {
@@ -193,7 +198,7 @@ export default function CinematicVideoChapter({
           labelRefs.current[0],
           { autoAlpha: 0, y: 12 },
           { autoAlpha: 1, y: 0, duration: 0.22, ease: "power2.out" },
-          0.2
+          continuousFromPrev ? 0.12 : 0.2
         );
       }
 
@@ -281,14 +286,23 @@ export default function CinematicVideoChapter({
         );
         tl.call(() => primeVideo(blendOutVideoRef.current), undefined, exitStart);
       } else if (slides.length > 0) {
-        const activeSlides = slideRefs.current.filter(
-          (slide): slide is HTMLDivElement => slide !== null
-        );
-        tl.to(
-          activeSlides,
-          { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
-          ">-0.32"
-        );
+        const lastIdx = slides.length - 1;
+        /* Exclude incoming last slide — it is still crossfading in when exit starts. */
+        const exitSlides =
+          slides.length > 1
+            ? slideRefs.current.filter(
+                (slide, i): slide is HTMLDivElement => slide !== null && i < lastIdx
+              )
+            : slideRefs.current.filter(
+                (slide): slide is HTMLDivElement => slide !== null
+              );
+        if (exitSlides.length > 0) {
+          tl.to(
+            exitSlides,
+            { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
+            ">-0.32"
+          );
+        }
         tl.call(hideChapter, undefined, ">");
       }
     }, sectionRef);
