@@ -17,6 +17,12 @@ interface CinematicVideoChapterProps {
   slides: VideoSlide[];
   pinScrollPerSlide?: number;
   mobilePinScrollPerSlide?: number;
+  /** Last frame of previous chapter — crossfades into first slide on entry */
+  blendInSrc?: string;
+  /** First frame of next chapter — crossfades from last slide on exit */
+  blendOutSrc?: string;
+  /** Pull section up to overlap previous chapter's exit crossfade */
+  overlapPrevVh?: number;
   /** Seconds (timeline units) to hold titles at full opacity before hiding */
   titleHold?: number;
   /** Hold per slide before crossfade */
@@ -41,7 +47,7 @@ function primeVideo(video: HTMLVideoElement | null) {
 
 /**
  * Pinned scroll chapter — full-bleed videos crossfade on scroll.
- * Chapter titles appear briefly, then fully disappear before slide transitions.
+ * blendIn/blendOut keep continuity with adjacent chapters (no black gaps).
  */
 export default function CinematicVideoChapter({
   id,
@@ -51,6 +57,9 @@ export default function CinematicVideoChapter({
   slides,
   pinScrollPerSlide = 750,
   mobilePinScrollPerSlide,
+  blendInSrc,
+  blendOutSrc,
+  overlapPrevVh = 0,
   titleHold = 0.3,
   slideHold,
   slideFade,
@@ -61,6 +70,10 @@ export default function CinematicVideoChapter({
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const labelRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const blendInRef = useRef<HTMLDivElement>(null);
+  const blendOutRef = useRef<HTMLDivElement>(null);
+  const blendInVideoRef = useRef<HTMLVideoElement>(null);
+  const blendOutVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -73,8 +86,11 @@ export default function CinematicVideoChapter({
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
     const hold = slideHold ?? (isMobile ? 0.16 : 0.2);
     const fade = slideFade ?? (isMobile ? 0.14 : 0.18);
+    const needsEntryBlend = blendInSrc && blendInSrc !== slides[0]?.src;
 
     videoRefs.current.forEach((video) => primeVideo(video));
+    primeVideo(blendInVideoRef.current);
+    primeVideo(blendOutVideoRef.current);
 
     const hideChapter = () => {
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
@@ -87,9 +103,13 @@ export default function CinematicVideoChapter({
 
     const restoreChapter = () => {
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
+      if (blendOutRef.current) gsap.set(blendOutRef.current, { autoAlpha: 0 });
+      if (needsEntryBlend && blendInRef.current) {
+        gsap.set(blendInRef.current, { autoAlpha: 1 });
+      }
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        gsap.set(slide, { autoAlpha: slides.length > 0 && i === 0 ? 1 : 0 });
+        gsap.set(slide, { autoAlpha: slides.length > 0 && i === 0 && !needsEntryBlend ? 1 : 0 });
       });
       if (slides.length > 0) {
         primeVideo(videoRefs.current[0]);
@@ -99,12 +119,22 @@ export default function CinematicVideoChapter({
     const ctx = gsap.context(() => {
       slideRefs.current.forEach((slide, i) => {
         if (!slide) return;
-        gsap.set(slide, { autoAlpha: i === 0 ? 1 : 0 });
+        gsap.set(slide, { autoAlpha: i === 0 && !needsEntryBlend ? 1 : 0 });
       });
       labelRefs.current.forEach((label, i) => {
         if (!label) return;
         gsap.set(label, { autoAlpha: i === 0 ? 1 : 0, y: i === 0 ? 0 : 8 });
       });
+
+      if (needsEntryBlend && blendInRef.current) {
+        gsap.set(blendInRef.current, { autoAlpha: 1 });
+      } else if (blendInRef.current) {
+        gsap.set(blendInRef.current, { autoAlpha: 0 });
+      }
+
+      if (blendOutRef.current) {
+        gsap.set(blendOutRef.current, { autoAlpha: 0 });
+      }
 
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
 
@@ -121,11 +151,15 @@ export default function CinematicVideoChapter({
         },
       });
 
-      if (slides.length > 0) {
+      if (needsEntryBlend) {
+        tl.to(blendInRef.current, { autoAlpha: 0, duration: 0.28 }, 0);
+        tl.to(slideRefs.current[0], { autoAlpha: 1, duration: 0.28 }, 0);
+        tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
+      } else if (slides.length > 0) {
         tl.call(() => primeVideo(videoRefs.current[0]), undefined, 0);
       }
 
-      const titleIn = 0.06;
+      const titleIn = needsEntryBlend ? 0.18 : 0.06;
       tl.fromTo(
         chapterRef.current,
         { autoAlpha: 0, x: -8 },
@@ -146,10 +180,11 @@ export default function CinematicVideoChapter({
         titleOut
       );
 
+      const entryOffset = needsEntryBlend ? 0.28 : 0;
       const slidesStart = titleOut + 0.35;
 
       for (let i = 0; i < slides.length - 1; i++) {
-        const t = slidesStart + i * (hold + fade);
+        const t = slidesStart + entryOffset + i * (hold + fade);
 
         tl.to(slideRefs.current[i], { autoAlpha: 0, duration: fade }, t);
         tl.to(slideRefs.current[i + 1], { autoAlpha: 1, duration: fade }, t);
@@ -176,7 +211,20 @@ export default function CinematicVideoChapter({
         );
       }
 
-      if (slides.length > 0) {
+      if (blendOutSrc && blendOutRef.current && slides.length > 0) {
+        const lastIdx = slides.length - 1;
+        const exitStart =
+          slidesStart + entryOffset + Math.max(0, slides.length - 1) * (hold + fade) + hold * 0.4;
+
+        tl.to(slideRefs.current[lastIdx], { autoAlpha: 0, duration: 0.32 }, exitStart);
+        tl.fromTo(
+          blendOutRef.current,
+          { autoAlpha: 0 },
+          { autoAlpha: 1, duration: 0.32 },
+          exitStart
+        );
+        tl.call(() => primeVideo(blendOutVideoRef.current), undefined, exitStart);
+      } else if (slides.length > 0) {
         const activeSlides = slideRefs.current.filter(
           (slide): slide is HTMLDivElement => slide !== null
         );
@@ -200,6 +248,8 @@ export default function CinematicVideoChapter({
     slides.length,
     pinScrollPerSlide,
     mobilePinScrollPerSlide,
+    blendInSrc,
+    blendOutSrc,
     titleHold,
     slideHold,
     slideFade,
@@ -220,6 +270,7 @@ export default function CinematicVideoChapter({
         padding: 0,
         backgroundColor: "#000",
         isolation: "isolate",
+        marginTop: overlapPrevVh ? `-${overlapPrevVh}vh` : 0,
       }}
     >
       {slides.map((slide, i) => (
@@ -251,6 +302,56 @@ export default function CinematicVideoChapter({
           />
         </div>
       ))}
+
+      {blendInSrc && blendInSrc !== slides[0]?.src && (
+        <div
+          ref={blendInRef}
+          style={{ position: "absolute", inset: 0, zIndex: 2, opacity: 0 }}
+        >
+          <video
+            ref={blendInVideoRef}
+            src={blendInSrc}
+            data-src={blendInSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      )}
+
+      {blendOutSrc && (
+        <div
+          ref={blendOutRef}
+          style={{ position: "absolute", inset: 0, zIndex: 3, opacity: 0 }}
+        >
+          <video
+            ref={blendOutVideoRef}
+            src={blendOutSrc}
+            data-src={blendOutSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      )}
 
       <div
         aria-hidden="true"

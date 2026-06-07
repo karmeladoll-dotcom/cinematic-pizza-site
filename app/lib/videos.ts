@@ -1,6 +1,9 @@
 /** Canonical paths for cinematic narrative videos. */
 export const VIDEOS = {
   oven: "/videos/oven.mp4",
+  sourceMozzarella: "/videos/source-mozzarella.mp4",
+  sourceBasil: "/videos/source-basil.mp4",
+  sourceTomato: "/videos/source-tomato.mp4",
   flour: "/videos/flour.mp4",
   tomato: "/videos/tomato.mp4",
   mozzarela: "/videos/mozzarela.mp4",

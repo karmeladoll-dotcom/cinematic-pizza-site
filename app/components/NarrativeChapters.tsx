@@ -1,15 +1,13 @@
 import CinematicVideoChapter from "./CinematicVideoChapter";
 import { VIDEOS } from "../lib/videos";
 
-/**
- * TEMPORARY NARRATIVE RESET — chapter-by-chapter rebuild baseline.
- * Active video: oven.mp4 only (Chapter I).
- * Chapters II & III retain structure, no videos yet.
- */
-
 const FIRE_SLIDES = [{ src: VIDEOS.oven }];
 
-const SOURCE_SLIDES: { src: string; label?: string }[] = [];
+const SOURCE_SLIDES: { src: string; label?: string }[] = [
+  { src: VIDEOS.sourceMozzarella, label: "Mozzarella di Bufala" },
+  { src: VIDEOS.sourceBasil, label: "Basilico Genovese" },
+  { src: VIDEOS.sourceTomato, label: "Pomodoro San Marzano" },
+];
 
 const RESULT_SLIDES: { src: string }[] = [];
 
@@ -24,6 +22,8 @@ export default function FireChapterSection() {
       pinScrollPerSlide={420}
       mobilePinScrollPerSlide={280}
       titleHold={0.22}
+      blendOutSrc={VIDEOS.sourceMozzarella}
+      overlapPrevVh={12}
     />
   );
 }
@@ -39,6 +39,7 @@ export function SourceChapterSection() {
       pinScrollPerSlide={420}
       mobilePinScrollPerSlide={280}
       titleHold={0.22}
+      overlapPrevVh={10}
     />
   );
 }
