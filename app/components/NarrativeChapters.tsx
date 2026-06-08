@@ -9,7 +9,10 @@ const SOURCE_SLIDES: { src: string; label?: string }[] = [
   { src: VIDEOS.sourceTomato, label: "Pomodoro San Marzano" },
 ];
 
-const RESULT_SLIDES: { src: string }[] = [];
+const RESULT_SLIDES: { src: string; label?: string }[] = [
+  { src: "/videos/result-focaccia.mp4", label: "L'Impasto" },
+  { src: "/videos/result-pizza-pull.mp4", label: "La Tavola" },
+];
 
 export default function FireChapterSection() {
   return (
@@ -41,6 +44,7 @@ export function SourceChapterSection() {
       titleHold={0.22}
       overlapPrevVh={10}
       blendInSrc={VIDEOS.sourceMozzarella}
+      blendOutSrc="/videos/result-focaccia.mp4"
       slideFade={0.38}
       labelVariant="title"
     />
@@ -58,6 +62,10 @@ export function ResultChapterSection() {
       pinScrollPerSlide={420}
       mobilePinScrollPerSlide={280}
       titleHold={0.22}
+      overlapPrevVh={10}
+      blendInSrc="/videos/result-focaccia.mp4"
+      slideFade={0.38}
+      labelVariant="title"
     />
   );
 }
