@@ -119,6 +119,7 @@ export default function CinematicVideoChapter({
 
     const hideChapter = () => {
       gsap.set([chapterRef.current, titleRef.current], { autoAlpha: 0 });
+      gsap.set(labelRefs.current.filter(Boolean), { autoAlpha: 0 });
       slideRefs.current.forEach((slide) => {
         if (!slide) return;
         gsap.set(slide, { autoAlpha: 0 });
@@ -275,13 +276,25 @@ export default function CinematicVideoChapter({
           slidesStart +
           entryOffset +
           Math.max(0, slides.length - 1) * (hold + overlapFade) +
-          hold * 0.4;
+          hold * 0;
 
-        tl.to(slideRefs.current[lastIdx], { autoAlpha: 0, duration: 0.32 }, exitStart);
+        if (labelRefs.current[lastIdx]) {
+          tl.to(
+            labelRefs.current[lastIdx],
+            {
+              autoAlpha: 0,
+              y: labelVariant === "title" ? -8 : -4,
+              duration: labelVariant === "title" ? 0.18 : overlapFade * 0.7,
+              ease: "power2.in",
+            },
+            exitStart - 0.14
+          );
+        }
+        tl.to(slideRefs.current[lastIdx], { autoAlpha: 0, duration: 0.32, ease: "none" }, exitStart);
         tl.fromTo(
           blendOutRef.current,
           { autoAlpha: 0 },
-          { autoAlpha: 1, duration: 0.32 },
+          { autoAlpha: 1, duration: 0.32, ease: "none" },
           exitStart
         );
         tl.call(() => primeVideo(blendOutVideoRef.current), undefined, exitStart);
