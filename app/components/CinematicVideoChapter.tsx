@@ -300,6 +300,15 @@ export default function CinematicVideoChapter({
         tl.call(() => primeVideo(blendOutVideoRef.current), undefined, exitStart);
       } else if (slides.length > 0) {
         const lastIdx = slides.length - 1;
+        /* Mirror the blendOutSrc exitStart formula so the label is fully in
+           before the fade-out fires (">-0.25" was too early, overlapping the
+           loop's label fade-in and being overridden by it). */
+        const exitStart =
+          slidesStart +
+          entryOffset +
+          Math.max(0, slides.length - 1) * (hold + overlapFade) +
+          hold;
+
         /* Exclude incoming last slide — it is still crossfading in when exit starts. */
         const exitSlides =
           slides.length > 1
@@ -309,13 +318,6 @@ export default function CinematicVideoChapter({
             : slideRefs.current.filter(
                 (slide): slide is HTMLDivElement => slide !== null
               );
-        if (exitSlides.length > 0) {
-          tl.to(
-            exitSlides,
-            { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
-            ">-0.32"
-          );
-        }
         if (labelRefs.current[lastIdx]) {
           tl.to(
             labelRefs.current[lastIdx],
@@ -325,7 +327,14 @@ export default function CinematicVideoChapter({
               duration: labelVariant === "title" ? 0.18 : overlapFade * 0.7,
               ease: "power2.in",
             },
-            ">-0.25"
+            exitStart - 0.14
+          );
+        }
+        if (exitSlides.length > 0) {
+          tl.to(
+            exitSlides,
+            { autoAlpha: 0, duration: 0.3, ease: "power2.in" },
+            exitStart
           );
         }
         tl.call(hideChapter, undefined, ">");
