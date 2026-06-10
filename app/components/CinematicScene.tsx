@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { smoothScrollTo } from "@/lib/smoothScroll";
 
 /** Hero plays frames 001–025 only (ezgif-frame-001.png … ezgif-frame-025.png). */
 const ROTATION_END_FRAME = 24;
@@ -438,6 +439,41 @@ export default function CinematicScene() {
                 />
               ))}
             </div>
+          </div>
+
+          {/* Reserve CTA — static; hides with heroVisualsRef when hero dismisses */}
+          <div
+            className="absolute inset-x-0 flex justify-center"
+            style={{ bottom: "clamp(4.5rem, 8vw, 7rem)", zIndex: 6 }}
+          >
+            <button
+              type="button"
+              onClick={() => smoothScrollTo("reservation", 80)}
+              style={{
+                fontFamily: "var(--font-cinematic, serif)",
+                fontSize: "0.58rem",
+                letterSpacing: "0.42em",
+                textTransform: "uppercase",
+                color: "rgba(251,191,36,0.82)",
+                background: "transparent",
+                border: "1px solid rgba(251,191,36,0.38)",
+                padding: "0.9rem 2.8rem",
+                cursor: "pointer",
+                transition: "color 0.3s ease, border-color 0.3s ease, background-color 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#0a0a0a";
+                e.currentTarget.style.borderColor = "#fbbf24";
+                e.currentTarget.style.backgroundColor = "#fbbf24";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "rgba(251,191,36,0.82)";
+                e.currentTarget.style.borderColor = "rgba(251,191,36,0.38)";
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+            >
+              Reserve a Table
+            </button>
           </div>
         </div>
       </section>
