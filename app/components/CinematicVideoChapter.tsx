@@ -316,6 +316,18 @@ export default function CinematicVideoChapter({
             ">-0.32"
           );
         }
+        if (labelRefs.current[lastIdx]) {
+          tl.to(
+            labelRefs.current[lastIdx],
+            {
+              autoAlpha: 0,
+              y: labelVariant === "title" ? -8 : -4,
+              duration: labelVariant === "title" ? 0.18 : overlapFade * 0.7,
+              ease: "power2.in",
+            },
+            ">-0.25"
+          );
+        }
         tl.call(hideChapter, undefined, ">");
       }
     }, sectionRef);
