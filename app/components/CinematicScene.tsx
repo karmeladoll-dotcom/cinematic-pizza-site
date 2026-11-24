@@ -5,12 +5,13 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { smoothScrollTo } from "@/lib/smoothScroll";
 
-/** Hero plays frames 001–025 only (ezgif-frame-001.png … ezgif-frame-025.png). */
+/** Hero plays frames 001–025 only. WebP copies (public/frames-webp, made by
+ *  scripts/frames-to-webp.mjs) load far faster than the original PNGs. */
 const ROTATION_END_FRAME = 24;
 const HERO_FRAME_COUNT = ROTATION_END_FRAME + 1;
 
 function frameSrc(n: number): string {
-  return `/frames/ezgif-frame-${String(n).padStart(3, "0")}.png`;
+  return `/frames-webp/ezgif-frame-${String(n).padStart(3, "0")}.webp`;
 }
 
 export default function CinematicScene() {
@@ -55,7 +56,9 @@ export default function CinematicScene() {
       if (!heroDismissed) return;
       heroDismissed = false;
 
-      gsap.set([canvas, heroVisualsRef.current], { clearProps: "opacity,visibility" });
+      gsap.set([canvas, heroVisualsRef.current], {
+        clearProps: "opacity,visibility,transform,filter",
+      });
       drawFrame(currentFrame);
     }
 
@@ -132,8 +135,13 @@ export default function CinematicScene() {
           start: "top top",
           end: `+=${PIN_SCROLL}`,
           pin: true,
-          scrub: 0.55,
+          scrub: 0.4,
           anticipatePin: 1,
+          /* Hero triggers are created async (after frames load), i.e. AFTER the
+             chapter triggers. Without priority ScrollTrigger refreshes it last, so
+             chapters compute their starts without the hero pin-spacer and pin
+             ~600px too early. */
+          refreshPriority: 1,
           onLeave: dismissHero,
           onEnterBack: restoreHero,
         },
@@ -217,9 +225,18 @@ export default function CinematicScene() {
         exitStart
       );
 
+      /* Hero → oven hand-off: the pizza pushes toward the camera and dissolves,
+         the oven stage (which is visible from the start) rises underneath. */
       tl.to(
         canvas,
-        { autoAlpha: 0, duration: FADE_OUT * 0.85, ease: "power2.in" },
+        {
+          autoAlpha: 0,
+          scale: 1.14,
+          filter: "blur(10px) brightness(1.25)",
+          transformOrigin: "50% 55%",
+          duration: FADE_OUT * 0.85,
+          ease: "power2.in",
+        },
         exitStart
       );
 

@@ -3,33 +3,118 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import FoodCursor from "./FoodCursor";
 
 /**
- * Reservation CTA — conversion-focused finale after the menu.
+ * Reservation finale — "Ready to Taste It?"
+ *
+ * Bookends the opening: the oven fire from the first chapter comes back, dimmed,
+ * and FADES IN out of the menu's darkness (no hard line / colour edge). The
+ * headline ignites letter by letter like sparks catching, embers rise, and the
+ * button glows. Reduced-motion users get plain fades.
  */
+
+const LINE_1 = "Ready to";
+const LINE_2 = "Taste It?";
+
+/** Fixed (not random) so server and client render the same markup. */
+const EMBERS = Array.from({ length: 18 }, (_, i) => ({
+  left: `${(i * 37 + 11) % 96}%`,
+  size: 2 + ((i * 5) % 4),
+  dur: 6.5 + ((i * 7) % 6),
+  delay: -((i * 3.1) % 9),
+  dx: ((i * 29) % 60) - 30,
+}));
+
+function Letters({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("").map((ch, i) =>
+        ch === " " ? (
+          <span key={i} aria-hidden="true" style={{ display: "inline-block", width: "0.28em" }} />
+        ) : (
+          <span key={i} className="cta-letter" aria-hidden="true" style={{ display: "inline-block" }}>
+            {ch}
+          </span>
+        )
+      )}
+    </>
+  );
+}
+
 export default function ReservationCTA() {
   const sectionRef = useRef<HTMLElement>(null);
-  const itemsRef   = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const ctx = gsap.context(() => {
-      const items = itemsRef.current?.querySelectorAll<HTMLElement>(".cta-item");
-      if (items?.length) {
-        gsap.fromTo(
-          Array.from(items),
-          { autoAlpha: 0, y: 45 },
-          {
-            autoAlpha: 1, y: 0,
-            duration: 1.5, ease: "power2.out", stagger: 0.2,
-            scrollTrigger: { trigger: sectionRef.current, start: "top 65%" },
-          }
+      const section = sectionRef.current!;
+      const letters1 = gsap.utils.toArray<HTMLElement>(".cta-l1 .cta-letter", section);
+      const letters2 = gsap.utils.toArray<HTMLElement>(".cta-l2 .cta-letter", section);
+      const all = [...letters1, ...letters2];
+      const rest = gsap.utils.toArray<HTMLElement>(".cta-item", section);
+
+      const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: "top 55%" } });
+
+      if (reduced) {
+        tl.fromTo([...all, ...rest], { autoAlpha: 0 }, { autoAlpha: 1, duration: 1, stagger: 0.05 });
+      } else {
+        /* sparks catch: letters rise out of blur and flare, then cool to white / amber */
+        tl.fromTo(
+          all,
+          { autoAlpha: 0, y: 70, rotateX: -70, filter: "blur(10px)", transformPerspective: 700 },
+          { autoAlpha: 1, y: 0, rotateX: 0, filter: "blur(0px)", duration: 1.15, ease: "power3.out", stagger: 0.045 },
+          0
         );
+        tl.fromTo(
+          all,
+          { textShadow: "0 0 36px rgba(251,191,36,1), 0 0 90px rgba(249,115,22,0.9)" },
+          { textShadow: "0 0 0px rgba(251,191,36,0)", duration: 1.8, ease: "power2.out", stagger: 0.045 },
+          0.1
+        );
+        tl.fromTo(
+          rest,
+          { autoAlpha: 0, y: 36 },
+          { autoAlpha: 1, y: 0, duration: 1.2, ease: "power2.out", stagger: 0.18 },
+          0.7
+        );
+
+        /* idle: a slow glow wave runs through the amber words */
+        tl.add(() => {
+          gsap.to(letters2, {
+            textShadow: "0 0 30px rgba(251,191,36,0.6)",
+            duration: 1.6,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+            stagger: { each: 0.12, repeat: -1, yoyo: true },
+          });
+        }, 2.4);
       }
     }, sectionRef);
 
-    return () => ctx.revert();
+    /* play the fire only while the finale is on screen */
+    const video = videoRef.current;
+    let io: IntersectionObserver | undefined;
+    if (video) {
+      io = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) video.play().catch(() => {});
+          else video.pause();
+        },
+        { rootMargin: "120px 0px" }
+      );
+      io.observe(sectionRef.current!);
+    }
+
+    return () => {
+      io?.disconnect();
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -39,145 +124,133 @@ export default function ReservationCTA() {
       ref={sectionRef}
       style={{
         position: "relative",
-        background: "#060606",
-        padding: "clamp(8rem, 16vw, 20rem) clamp(1.5rem, 8vw, 8rem)",
+        /* same colour as the end of the menu section → no visible seam */
+        background: "#080808",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "clamp(7rem, 14vw, 16rem) clamp(1.5rem, 8vw, 8rem)",
         overflow: "hidden",
         textAlign: "center",
       }}
     >
-      {/* ── CSS smoke wisps — no RAF required ── */}
+      <FoodCursor zoneRef={sectionRef} />
+
       <style>{`
-        @keyframes smokeRise1 {
-          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
-          20%  { opacity: 0.85; }
-          80%  { opacity: 0.55; }
-          100% { opacity: 0;    transform: translateY(-90px) scaleX(1.45); }
+        @keyframes emberRise {
+          0%   { opacity: 0;   transform: translate3d(0, 0, 0) scale(1); }
+          12%  { opacity: .95; }
+          70%  { opacity: .55; }
+          100% { opacity: 0;   transform: translate3d(var(--dx), -78vh, 0) scale(.3); }
         }
-        @keyframes smokeRise2 {
-          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
-          25%  { opacity: 0.70; }
-          75%  { opacity: 0.45; }
-          100% { opacity: 0;    transform: translateY(-75px) scaleX(1.35); }
+        @keyframes finaleBreath {
+          0%, 100% { opacity: .72; }
+          50%      { opacity: 1; }
         }
-        @keyframes smokeRise3 {
-          0%   { opacity: 0;    transform: translateY(0)     scaleX(1.00); }
-          30%  { opacity: 0.60; }
-          70%  { opacity: 0.35; }
-          100% { opacity: 0;    transform: translateY(-60px) scaleX(1.25); }
-        }
-        @keyframes ovenPulse {
-          0%, 100% { opacity: 0.72; }
-          50%      { opacity: 1.00; }
+        .cta-embers span { animation-name: emberRise; animation-timing-function: ease-out; animation-iteration-count: infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .cta-embers { display: none; }
         }
       `}</style>
 
+      {/* ── The oven fire returns (dim), fading in from the menu's darkness ── */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
-          bottom: 0, left: "50%",
-          transform: "translateX(-50%)",
-          width: "100%",
-          height: "55%",
+          inset: 0,
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 26%, #000 48%, #000 72%, rgba(0,0,0,0.35) 92%, transparent 100%)",
+          maskImage:
+            "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.55) 26%, #000 48%, #000 72%, rgba(0,0,0,0.35) 92%, transparent 100%)",
           pointerEvents: "none",
         }}
       >
-        {/* Smoke wisp 1 — centre */}
-        <div
+        <video
+          ref={videoRef}
+          src="/videos/oven.mp4"
+          muted
+          loop
+          playsInline
+          preload="metadata"
           style={{
             position: "absolute",
-            bottom: 0,
-            left: "48%",
-            width: "clamp(80px, 14vw, 180px)",
-            height: "clamp(80px, 14vw, 180px)",
-            borderRadius: "50%",
-            background:
-              "radial-gradient(ellipse, rgba(255,225,180,0.10) 0%, transparent 68%)",
-            filter: "blur(18px)",
-            animation: "smokeRise1 7s ease-out infinite",
-          }}
-        />
-        {/* Smoke wisp 2 — left offset */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: "38%",
-            width: "clamp(60px, 10vw, 130px)",
-            height: "clamp(60px, 10vw, 130px)",
-            borderRadius: "50%",
-            background:
-              "radial-gradient(ellipse, rgba(255,210,160,0.08) 0%, transparent 68%)",
-            filter: "blur(22px)",
-            animation: "smokeRise2 9s ease-out infinite 2.2s",
-          }}
-        />
-        {/* Smoke wisp 3 — right offset */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: "56%",
-            width: "clamp(50px, 8vw, 110px)",
-            height: "clamp(50px, 8vw, 110px)",
-            borderRadius: "50%",
-            background:
-              "radial-gradient(ellipse, rgba(255,195,140,0.07) 0%, transparent 68%)",
-            filter: "blur(20px)",
-            animation: "smokeRise3 11s ease-out infinite 4.5s",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: 0.42,
+            filter: "saturate(1.1) contrast(1.05)",
           }}
         />
       </div>
 
-      {/* ── Wide diffuse oven glow field ── */}
+      {/* vignette keeps the text readable */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(ellipse 80% 65% at 50% 55%, rgba(249,115,22,0.07) 0%, rgba(251,191,36,0.04) 35%, transparent 68%)",
           pointerEvents: "none",
-          animation: "ovenPulse 4.5s ease-in-out infinite",
+          background:
+            "radial-gradient(ellipse 70% 60% at 50% 52%, rgba(8,8,8,0.15) 0%, rgba(8,8,8,0.55) 55%, rgba(8,8,8,0.92) 100%)",
         }}
       />
 
-      {/* ── Bright inner glow core ── */}
+      {/* breathing amber glow */}
       <div
         aria-hidden="true"
         style={{
           position: "absolute",
           inset: 0,
-          background:
-            "radial-gradient(ellipse 40% 35% at 50% 55%, rgba(251,191,36,0.06) 0%, transparent 62%)",
           pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 60% 45% at 50% 62%, rgba(249,115,22,0.16) 0%, rgba(251,191,36,0.06) 40%, transparent 70%)",
+          animation: "finaleBreath 4.5s ease-in-out infinite",
         }}
       />
 
-      {/* ── Top border accent ── */}
+      {/* rising embers */}
       <div
+        className="cta-embers"
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: 0, left: "8%", right: "8%",
-          height: "1px",
-          background:
-            "linear-gradient(to right, transparent, rgba(251,191,36,0.22), transparent)",
-          pointerEvents: "none",
-        }}
-      />
+        style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: "100%", pointerEvents: "none" }}
+      >
+        {EMBERS.map((e, i) => (
+          <span
+            key={i}
+            style={
+              {
+                position: "absolute",
+                bottom: "-2%",
+                left: e.left,
+                width: e.size,
+                height: e.size,
+                borderRadius: "50%",
+                background: "rgb(251,191,36)",
+                boxShadow: "0 0 10px 2px rgba(249,115,22,0.8)",
+                opacity: 0,
+                animationDuration: `${e.dur}s`,
+                animationDelay: `${e.delay}s`,
+                "--dx": `${e.dx}px`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+      </div>
 
       {/* ── Content ── */}
-      <div ref={itemsRef}>
+      <div ref={itemsRef} style={{ position: "relative", zIndex: 2 }}>
         <span
           className="cta-item"
           style={{
             display: "block",
             fontFamily: "var(--font-cinematic, serif)",
-            fontSize: "0.58rem",
+            fontSize: "0.62rem",
             letterSpacing: "0.55em",
             textTransform: "uppercase",
-            color: "rgba(251,191,36,0.5)",
+            color: "rgba(251,191,36,0.75)",
             marginBottom: "2.2rem",
             opacity: 0,
           }}
@@ -186,7 +259,7 @@ export default function ReservationCTA() {
         </span>
 
         <h2
-          className="cta-item"
+          aria-label="Ready to Taste It?"
           style={{
             fontFamily: "var(--font-cinematic, serif)",
             fontSize: "clamp(2.8rem, 8vw, 9.5rem)",
@@ -195,22 +268,25 @@ export default function ReservationCTA() {
             letterSpacing: "0.03em",
             lineHeight: 1.0,
             marginBottom: "2.8rem",
-            opacity: 0,
           }}
         >
-          Ready to
-          <br />
-          <em style={{ fontStyle: "italic", color: "rgba(251,191,36,0.92)" }}>
-            Taste It?
-          </em>
+          <span className="cta-l1" style={{ display: "block" }}>
+            <Letters text={LINE_1} />
+          </span>
+          <span
+            className="cta-l2"
+            style={{ display: "block", fontStyle: "italic", color: "rgba(251,191,36,0.95)" }}
+          >
+            <Letters text={LINE_2} />
+          </span>
         </h2>
 
         <p
           className="cta-item"
           style={{
             fontFamily: "var(--font-cinematic, serif)",
-            fontSize: "clamp(0.82rem, 1.4vw, 1.08rem)",
-            color: "rgba(161,161,170,0.42)",
+            fontSize: "clamp(0.9rem, 1.4vw, 1.12rem)",
+            color: "rgba(228,228,231,0.66)",
             maxWidth: 500,
             margin: "0 auto 3.8rem",
             lineHeight: 1.95,
@@ -221,19 +297,18 @@ export default function ReservationCTA() {
           Seventeen covers each evening. Tables open thirty days in advance.
         </p>
 
-        {/* CTA Button */}
         <div className="cta-item" style={{ opacity: 0 }}>
           <a
             href="mailto:reservations@fornonero.com"
             style={{
               display: "inline-block",
               fontFamily: "var(--font-cinematic, serif)",
-              fontSize: "0.62rem",
+              fontSize: "0.66rem",
               letterSpacing: "0.42em",
               textTransform: "uppercase",
               color: "#050505",
               background: "linear-gradient(135deg, #fbbf24 0%, #f97316 100%)",
-              padding: "1.15rem 3.2rem",
+              padding: "1.2rem 3.4rem",
               textDecoration: "none",
               transition: "all 0.45s ease",
               animation: "amber-pulse 2.8s ease-in-out infinite",
