@@ -17,6 +17,36 @@ export interface StageChapter {
   slides: StageSlide[];
 }
 
+/** `/videos/oven.mp4` -> `/posters/oven` (stills made by scripts/make-posters.mjs) */
+function posterBase(src: string): string {
+  return `/posters/${src.split("/").pop()!.replace(/\.mp4$/, "")}`;
+}
+
+/**
+ * Landscape (desktop): the clip fills the stage (cover), exactly as before.
+ * Portrait (phones): cover would keep only the middle ~30% of a 16:9 frame, so the
+ * clip is shown whole (contain, a 16:9 band in the middle) over a blurred ambient
+ * fill made from its poster, with soft top/bottom edges.
+ */
+const STAGE_CSS = `
+.stage-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; }
+.stage-backdrop { display:none; }
+@media (orientation: portrait) {
+  .stage-backdrop {
+    display:block; position:absolute; inset:-6%;
+    background-size:cover; background-position:center; background-color:#050505;
+  }
+  .stage-video {
+    inset:auto; left:0; right:0; top:46%;
+    width:100%; height:auto; aspect-ratio:16/9;
+    transform:translateY(-50%);
+    object-fit:contain; background:transparent;
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    mask-image:linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+}
+`;
+
 /**
  * One pinned "stage" for ALL narrative chapters.
  *
@@ -271,8 +301,22 @@ export default function CinematicStage({ chapters }: { chapters: StageChapter[] 
     const onResize = () => ScrollTrigger.refresh();
     window.addEventListener("resize", onResize, { passive: true });
 
+    /* Phones in low-power / data-saver mode refuse play() until the visitor touches
+       the page. Retry on every touch so the clips start as soon as they are allowed
+       (until then the poster stills are shown). */
+    const retryPlay = () =>
+      videoEls.current.forEach((v, i) => {
+        const el = slideEls.current[i];
+        if (!v || !el) return;
+        if ((gsap.getProperty(el, "opacity") as number) > 0.01 && v.paused) v.play().catch(() => {});
+      });
+    window.addEventListener("touchstart", retryPlay, { passive: true });
+    window.addEventListener("touchend", retryPlay, { passive: true });
+
     return () => {
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("touchstart", retryPlay);
+      window.removeEventListener("touchend", retryPlay);
       ctx.revert();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -286,15 +330,16 @@ export default function CinematicStage({ chapters }: { chapters: StageChapter[] 
         zIndex: 3,
         /* Start the stage's pin ~180px BEFORE the hero's pin ends, on top of it, so the
            oven dissolves in over the still-pinned hero (see OPEN in the timeline). */
-        marginTop: "calc(-100vh - 180px)",
+        marginTop: "calc(-1 * var(--vh100) - 180px)",
       }}
     >
+      <style>{STAGE_CSS}</style>
       <section
         ref={sectionRef}
         data-pizza-section="story"
         style={{
           position: "relative",
-          height: "100vh",
+          height: "var(--vh100)",
           overflow: "hidden",
           margin: 0,
           padding: 0,
@@ -317,24 +362,25 @@ export default function CinematicStage({ chapters }: { chapters: StageChapter[] 
                 }}
                 style={{ position: "absolute", inset: 0, willChange: "transform" }}
               >
+                {/* portrait phones: soft blurred ambient fill behind the full 16:9 frame */}
+                <div
+                  className="stage-backdrop"
+                  aria-hidden="true"
+                  style={{ backgroundImage: `url(${posterBase(s.src)}-bg.webp)` }}
+                />
                 <video
                   ref={(el) => {
                     videoEls.current[g] = el;
                   }}
+                  className="stage-video"
                   src={s.src}
+                  poster={`${posterBase(s.src)}.webp`}
                   muted
                   loop
                   playsInline
                   preload={g < 2 ? "auto" : "metadata"}
                   autoPlay={g === 0}
                   aria-hidden="true"
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
                 />
               </div>
             </div>

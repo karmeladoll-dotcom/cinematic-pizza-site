@@ -126,7 +126,7 @@ export default function ReservationCTA() {
         position: "relative",
         /* same colour as the end of the menu section → no visible seam */
         background: "#080808",
-        minHeight: "100vh",
+        minHeight: "var(--vh100)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -147,6 +147,18 @@ export default function ReservationCTA() {
         @keyframes finaleBreath {
           0%, 100% { opacity: .72; }
           50%      { opacity: 1; }
+        }
+        .cta-fire { opacity: .42; }
+        .cta-vignette {
+          background: radial-gradient(ellipse 70% 60% at 50% 52%, rgba(8,8,8,0.15) 0%, rgba(8,8,8,0.55) 55%, rgba(8,8,8,0.92) 100%);
+        }
+        /* wide screens: the oven is a small, low arch in the middle of a very wide
+           frame and read as almost black — let the fire show through more */
+        @media (min-width: 768px) {
+          .cta-fire { opacity: .78; filter: saturate(1.25) contrast(1.1) brightness(1.15) !important; }
+          .cta-vignette {
+            background: radial-gradient(ellipse 80% 70% at 50% 55%, rgba(8,8,8,0) 0%, rgba(8,8,8,0.34) 55%, rgba(8,8,8,0.86) 100%);
+          }
         }
         .cta-embers span { animation-name: emberRise; animation-timing-function: ease-out; animation-iteration-count: infinite; }
         @media (prefers-reduced-motion: reduce) {
@@ -169,7 +181,9 @@ export default function ReservationCTA() {
       >
         <video
           ref={videoRef}
+          className="cta-fire"
           src="/videos/oven.mp4"
+          poster="/posters/oven.webp"
           muted
           loop
           playsInline
@@ -180,7 +194,6 @@ export default function ReservationCTA() {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            opacity: 0.42,
             filter: "saturate(1.1) contrast(1.05)",
           }}
         />
@@ -188,14 +201,9 @@ export default function ReservationCTA() {
 
       {/* vignette keeps the text readable */}
       <div
+        className="cta-vignette"
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 70% 60% at 50% 52%, rgba(8,8,8,0.15) 0%, rgba(8,8,8,0.55) 55%, rgba(8,8,8,0.92) 100%)",
-        }}
+        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
       />
 
       {/* breathing amber glow */}

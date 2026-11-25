@@ -361,12 +361,23 @@ export default function CinematicScene() {
         data-pizza-section="hero"
         className="relative w-full bg-black overflow-hidden"
         style={{
-          height: "100vh",
+          height: "var(--vh100)",
           margin: 0,
           padding: 0,
           overflow: "hidden",
         }}
       >
+        <style>{`
+          .hero-scroll { bottom: 2.5rem; }
+          .hero-scroll-label { font-size: 9px; color: rgba(255,255,255,0.3); }
+          .hero-cta { bottom: clamp(4.5rem, 8vw, 7rem); }
+          /* phones: SCROLL was nearly invisible and the CTA sat on the browser bar */
+          @media (max-width: 767px) {
+            .hero-scroll { bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); }
+            .hero-scroll-label { font-size: 11px; color: rgba(255,255,255,0.72); letter-spacing: 0.5em; }
+            .hero-cta { bottom: calc(7.2rem + env(safe-area-inset-bottom, 0px)); }
+          }
+        `}</style>
         <div ref={heroVisualsRef} className="absolute inset-0">
           <canvas
             ref={canvasRef}
@@ -434,13 +445,10 @@ export default function CinematicScene() {
 
           <div
             ref={scrollHintRef}
-            className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-3 pointer-events-none"
+            className="hero-scroll absolute inset-x-0 flex flex-col items-center gap-3 pointer-events-none"
             style={{ zIndex: 5, opacity: 0 }}
           >
-            <span
-              className="text-[9px] tracking-[0.45em] uppercase"
-              style={{ color: "rgba(255,255,255,0.3)" }}
-            >
+            <span className="hero-scroll-label tracking-[0.45em] uppercase">
               Scroll
             </span>
             <div className="flex flex-col items-center gap-[3px]">
@@ -460,8 +468,8 @@ export default function CinematicScene() {
 
           {/* Reserve CTA — static; hides with heroVisualsRef when hero dismisses */}
           <div
-            className="absolute inset-x-0 flex justify-center"
-            style={{ bottom: "clamp(4.5rem, 8vw, 7rem)", zIndex: 6 }}
+            className="hero-cta absolute inset-x-0 flex justify-center"
+            style={{ zIndex: 6 }}
           >
             <button
               type="button"

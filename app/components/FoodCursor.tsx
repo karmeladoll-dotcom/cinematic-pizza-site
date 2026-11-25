@@ -13,6 +13,8 @@ import gsap from "gsap";
 
 const CSS = `
 .fx-cursor-zone, .fx-cursor-zone * { cursor: none !important; }
+/* Devices without a mouse (phones, tablets): the fork/knife never exists. */
+@media (hover: none), (pointer: coarse) { .fx-cursor-el { display: none !important; } }
 `;
 
 const TIP = { fork: 14.9, knife: 11 }; // x of the tip inside each SVG (px)
@@ -37,7 +39,13 @@ export default function FoodCursor({ zoneRef }: { zoneRef: RefObject<HTMLElement
 
     const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!fine || reduced) return;
+    if (!fine || reduced) {
+      /* no mouse / reduced motion: take the elements out of the page entirely
+         (they used to stay parked at the top-left corner of the screen) */
+      tRoot.style.display = "none";
+      gRoot.style.display = "none";
+      return;
+    }
 
     zone.classList.add("fx-cursor-zone");
 
@@ -148,14 +156,23 @@ export default function FoodCursor({ zoneRef }: { zoneRef: RefObject<HTMLElement
     };
   }, [zoneRef]);
 
-  const common = { position: "fixed", left: 0, top: 0, pointerEvents: "none", zIndex: 60 } as const;
+  /* hidden until the effect confirms a real mouse and starts tracking it */
+  const common = {
+    position: "fixed",
+    left: 0,
+    top: 0,
+    pointerEvents: "none",
+    zIndex: 60,
+    visibility: "hidden",
+    opacity: 0,
+  } as const;
 
   return (
     <>
       <style>{CSS}</style>
 
       {/* trailing glow */}
-      <div ref={glowRoot} aria-hidden="true" style={{ ...common, zIndex: 58 }}>
+      <div ref={glowRoot} className="fx-cursor-el" aria-hidden="true" style={{ ...common, zIndex: 58 }}>
         <div
           ref={glowRef}
           style={{
@@ -172,7 +189,7 @@ export default function FoodCursor({ zoneRef }: { zoneRef: RefObject<HTMLElement
       </div>
 
       {/* the tool itself — its tip sits exactly on the pointer */}
-      <div ref={toolRoot} aria-hidden="true" style={common}>
+      <div ref={toolRoot} className="fx-cursor-el" aria-hidden="true" style={common}>
         <div
           ref={toolRef}
           style={{

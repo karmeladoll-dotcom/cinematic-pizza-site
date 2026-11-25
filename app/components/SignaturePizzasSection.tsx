@@ -242,7 +242,7 @@ export default function SignaturePizzasSection() {
         position: "relative",
         zIndex: 5,
         /* curtain: rise over the pinned stage; soft top edge instead of a hard cut */
-        marginTop: "-100vh",
+        marginTop: "calc(-1 * var(--vh100))",
         background:
           "linear-gradient(to bottom, rgba(8,8,8,0) 0, rgba(8,8,8,0.55) 12vh, rgba(8,8,8,0.92) 26vh, #080808 36vh)",
         padding: "calc(30vh + 3rem) clamp(1.5rem, 8vw, 8rem) clamp(6rem, 12vw, 14rem)",

@@ -4,6 +4,16 @@
   --background: #000000;
   --foreground: #ffffff;
   --brand-gold: #fbbf24;
+  /* Full-screen height. On phones 100vh is the height WITHOUT the browser bars, so
+     bottom content (SCROLL hint, buttons) hides behind them; svh is what is really
+     visible. Falls back to vh where svh is unsupported. */
+  --vh100: 100vh;
+}
+
+@supports (height: 100svh) {
+  :root {
+    --vh100: 100svh;
+  }
 }
 
 @theme inline {
